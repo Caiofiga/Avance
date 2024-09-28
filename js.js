@@ -1,4 +1,54 @@
+function slider(value){
+   let div = document.getElementById("movable");
+    plant1pos = document.getElementById("plant1").getBoundingClientRect();
+    plant5pos = document.getElementById("plant5").getBoundingClientRect();
+    let x = (plant5pos.right + 40) * value / 100;
+    div.style.left = x + "px";
+}
 
+function isOverlapping(pos1, pos2){
+    return !(pos2.left > pos1.right || 
+        pos2.left < pos1.left);
+}
+
+const plants = document.querySelectorAll('.plant');
+const wateringcan = document.getElementById('movable');
+
+function plantinterval(){
+plants.forEach((plant) => {
+    if (isOverlapping(plant.getBoundingClientRect(), wateringcan.getBoundingClientRect())) {
+        const event = new CustomEvent('overlap', {
+            detail: {
+                plantId: plant.id
+            }
+        });
+        wateringcan.dispatchEvent(event);
+    }
+});}
+
+setInterval(plantinterval, 100);
+
+wateringcan.addEventListener('overlap', (event) => {
+    const plant = document.getElementById(event.detail.plantId);
+    if(plant.dataset.watertime >= parseFloat(0)){
+    plant.dataset.watertime = `${parseFloat(plant.dataset.watertime) - 0.1}`;
+    if (plant.dataset.watertime <= parseFloat(0)) {
+        plant.style.background = "green";
+    }
+}
+    console.log(plant.dataset.watertime);
+    
+});
+
+// Mocking Accelerometer API for testing
+if (!('Accelerometer' in window)) {
+    console.log("working my ass");
+    window.Accelerometer = MockAccelerometer;
+}
+
+
+//accelerometer code
+/*
 
 class MockAccelerometer {
     constructor(options) {
@@ -78,17 +128,6 @@ class MockAccelerometer {
     }
 }
 
-
-
-// Mocking Accelerometer API for testing
-if (!('Accelerometer' in window)) {
-    console.log("working my ass");
-
-    
-    window.Accelerometer = MockAccelerometer;
-}
-
-// Your code remains unchanged
 if ('Accelerometer' in window) {
     window.Accelerometer = MockAccelerometer;
 
@@ -113,4 +152,4 @@ if ('Accelerometer' in window) {
     }
 } else {
     console.log("Accelerometer is not supported by your browser.");
-}
+}*/

@@ -1,0 +1,35 @@
+#movable{
+    position: absolute;
+    margin-left: -40px;
+    left:0px;
+    width: 300px;
+    top: 50%;
+    
+}
+.plant {
+    position: absolute;
+    bottom: 10%; /* Positions them 10% from the bottom of the screen */
+    width: 200px;
+    height: 100px;
+    background: red;
+    transform: translateX(-50%);
+}
+
+#plant1 {
+    left: 10%; /* Adjust as needed to space the elements */
+}
+#plant2 {
+    left: 30%; /* Spacing based on the screen width */
+}
+#plant3 {
+    left: 50%;
+}
+#plant4 {
+    left: 70%;
+}
+#plant5 {
+    left: 90%;
+}
+body {
+    background:lightblue !important;
+}
