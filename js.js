@@ -1,0 +1,116 @@
+
+
+class MockAccelerometer {
+    constructor(options) {
+        this.name = "Mock"
+        this.options = options;
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.onreading = null;
+        this.onerror = null;
+        this.decreasex = false;
+        this.decreasey = false;
+        this.decreasez = false;
+    }
+    
+    setValue(value, coord) {
+        switch (coord) {
+            case "x":
+                if (!this.decreasex) {
+                    value = value + 1;
+                    if (value === 100) {
+                        this.decreasex = true;
+                    }
+                    return value;
+                } else {
+                    value = value - 1;
+                    if (value === 0) {
+                        this.decreasex = false;
+                    }
+                    return value;
+                }
+            case "y":
+                if (!this.decreasey) {
+                    value = value + 1;
+                    if (value === 100) {
+                        this.decreasey = true;
+                    }
+                    return value;
+                } else {
+                    value = value - 1;
+                    if (value === 0) {
+                        this.decreasey = false;
+                    }
+                    return value;
+                }
+            case "z":
+                if (!this.decreasez) {
+                    value = value + 1;
+                    if (value === 100) {
+                        this.decreasez = true;
+                    }
+                    return value;
+                } else {
+                    value = value - 1;
+                    if (value === 0) {
+                        this.decreasez = false;
+                    }
+                    return value;
+                }
+        }
+    }
+    
+    start() {
+        console.log("Mock Accelerometer started with options:", this.options);
+        this.interval = setInterval(() => {
+            this.x = this.setValue(this.x, "x");  // Simulate some random movement
+            this.y = this.setValue(this.y, "y");
+            this.z = this.setValue(this.z, "z");
+            if (this.onreading) {
+                this.onreading();
+            }
+        }, 1000);  // Update every second
+    }
+
+    stop() {
+        clearInterval(this.interval);
+    }
+}
+
+
+
+// Mocking Accelerometer API for testing
+if (!('Accelerometer' in window)) {
+    console.log("working my ass");
+
+    
+    window.Accelerometer = MockAccelerometer;
+}
+
+// Your code remains unchanged
+if ('Accelerometer' in window) {
+    window.Accelerometer = MockAccelerometer;
+
+    try {
+        let accelSensor = new Accelerometer({ referenceFrame: "device" });
+
+
+        accelSensor.onreading = () => {
+            document.getElementById("progress-bar").style.width = `${accelSensor.x}%`;
+            console.log( `${accelSensor.x}%`);
+            console.log(accelSensor.x);
+        };
+
+        accelSensor.onerror = (event) => {
+            console.error(`Accelerometer error: ${event.error.name}`);
+            console.error(event.error.message);
+        };
+
+        accelSensor.start();
+    } catch (error) {
+        console.error("Accelerometer initialization failed: " + error);
+    }
+} else {
+    console.log("Accelerometer is not supported by your browser.");
+}
