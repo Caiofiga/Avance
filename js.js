@@ -11,6 +11,17 @@ function isOverlapping(pos1, pos2){
         pos2.left < pos1.left);
 }
 
+let time = 0;
+let timeinterval = null;
+addEventListener('DOMContentLoaded', () => {
+
+function increaseTime(){
+    time += 0.1;
+}
+timeinterval = setInterval(increaseTime, 100);
+
+});
+
 const plants = document.querySelectorAll('.plant');
 const wateringcan = document.getElementById('movable');
 
@@ -28,7 +39,10 @@ plants.forEach((plant) => {
 
 setInterval(plantinterval, 100);
 
-wateringcan.addEventListener('overlap', (event) => {
+wateringcan.addEventListener('overlap', handleOverlap);
+
+    
+function handleOverlap(event) {
     const plant = document.getElementById(event.detail.plantId);
     if(plant.dataset.watertime >= parseFloat(0)){
     plant.dataset.watertime = `${parseFloat(plant.dataset.watertime) - 0.1}`;
@@ -36,9 +50,23 @@ wateringcan.addEventListener('overlap', (event) => {
         plant.style.background = "green";
     }
 }
-    console.log(plant.dataset.watertime);
-    
-});
+let check = 0;
+plants.forEach((plant) => {
+    if (plant.style.background === "green") {
+        check++;
+    }});
+    console.log(check);
+if (check === 5) {
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'))
+    myModal.show();
+    clearInterval(timeinterval);
+    document.getElementById("modal-text").innerHTML = `Parabéns! Você regou todas as plantas em ${time.toFixed(1)} segundos!`;
+    wateringcan.removeEventListener('overlap', handleOverlap);
+
+
+}}
+
+
 
 // Mocking Accelerometer API for testing
 if (!('Accelerometer' in window)) {

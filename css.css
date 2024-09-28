@@ -1,3 +1,10 @@
+#range{
+    position: absolute;
+    margin-left: 10%;
+    width: 80%;
+    top: 40%;
+}
+
 #movable{
     position: absolute;
     margin-left: -40px;
