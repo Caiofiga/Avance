@@ -1,10 +1,42 @@
-function slider(value){
+function moveDiv(value){
    let div = document.getElementById("movable");
     plant1pos = document.getElementById("plant1").getBoundingClientRect();
     plant5pos = document.getElementById("plant5").getBoundingClientRect();
     let x = (plant5pos.right + 40) * value / 100;
     div.style.left = x + "px";
 }
+
+const socket = new WebSocket('ws://localhost:6789');
+
+socket.onopen = function(e) {
+    console.log('[open] Connection established');
+};
+
+socket.onmessage = function(event) {
+    console.log(`[message] Data received from server: ${event.data}`);
+
+    try {
+        let displacement = JSON.parse(event.data);  // Receive and parse {dx, dy} from the server
+        let deltaX = displacement.dx;
+        let deltaY = displacement.dy;
+        moveDiv(deltaX);  // Move the div by deltaX and deltaY
+    } catch (err) {
+        console.error('Error parsing message data:', err);
+    }
+};
+
+socket.onclose = function(event) {
+    if (event.wasClean) {
+        console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+    } else {
+        console.log('[close] Connection died');
+    }
+};
+
+socket.onerror = function(event) {
+    console.error('[error] WebSocket error observed:', event);
+};
+
 
 function isOverlapping(pos1, pos2){
     return !(pos2.left > pos1.right || 
@@ -68,16 +100,17 @@ if (check === 5) {
 
 
 
-// Mocking Accelerometer API for testing
-if (!('Accelerometer' in window)) {
-    console.log("working my ass");
-    window.Accelerometer = MockAccelerometer;
-}
+
 
 
 //accelerometer code
 /*
 
+// Mocking Accelerometer API for testing
+if (!('Accelerometer' in window)) {
+    console.log("working my ass");
+    window.Accelerometer = MockAccelerometer;
+}
 class MockAccelerometer {
     constructor(options) {
         this.name = "Mock"
