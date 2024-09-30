@@ -9,7 +9,8 @@ import threading
 from queue import Queue, Empty
 from bokeh.plotting import figure, curdoc
 from bokeh.models import ColumnDataSource
-from bokeh.embed import server_document
+from bokeh.embed import server_session
+from bokeh.client import pull_session
 from bokeh.server.server import Server
 from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
@@ -17,6 +18,8 @@ from tornado.ioloop import IOLoop
 import json
 import websocket
 import threading
+from flask import Flask, render_template, Response
+
 
 # Preface: This is a fucking mess
 
@@ -26,7 +29,7 @@ import threading
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(
     static_image_mode=False,
-    max_num_hands=2,
+    max_num_hands=1,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
@@ -161,10 +164,10 @@ async def broadcaster():
 
 # region graph creation
 
+# region main graph creation
 data = ColumnDataSource(data=dict(time=[], x=[], y=[], z=[]))
 starttime = 0
 
-# Define colors and background
 x_data_color = "#d32f2f"  # red
 y_data_color = "#7cb342"  # green
 z_data_color = "#0288d1"  # blue
@@ -172,17 +175,20 @@ background_color = "#fafafa"  # light grey
 
 lock = threading.Lock()
 
-p = figure(title="Accelerometer Data", x_axis_label="Time",
-           y_axis_label="Value", background_fill_color=background_color)
+p = figure(title="Dados de sensores", x_axis_label="Tempo(segundos)",
+           y_axis_label="Sla mano(Newtons eu acho)", background_fill_color=background_color)
 p.line(x='time', y='x', source=data,
-       line_color=x_data_color, legend_label='X')
+       line_color=x_data_color, legend_label='Eixo X')
 p.line(x='time', y='y', source=data,
-       line_color=y_data_color, legend_label='Y')
+       line_color=y_data_color, legend_label=' Eixo Y')
 p.line(x='time', y='z', source=data,
-       line_color=z_data_color, legend_label='Z')
+       line_color=z_data_color, legend_label=' Eixo Z')
+p.x_range.follow = "end"
+p.y_range.follow = "end"
 doc = curdoc()
-script = server_document("html.html", relative_urls=True)
+# endregion
 
+# region bokeh server stuff
 # tornado requires my to provide an Application to its server
 # shitty workaround incoming
 
@@ -218,8 +224,12 @@ def start_bokeh_server():
     io_loop = IOLoop.current()
     # PPS : FUCK Multithreading
     bokeh_app = Application(FunctionHandler(modify_doc))
-    server = Server({'/': bokeh_app}, io_loop=io_loop, port=5006)
+    server = Server({'/': bokeh_app}, io_loop=io_loop, port=5006,
+                    # apparently, localhost is not the same as 127.0.0.1
+                    allow_websocket_origin=["localhost:5000", 'localhost:5006', "127.0.0.1:5000"])
+    # 1 fucking hour, goddamn
     server.start()
+
     io_loop.start()
 
 
@@ -237,12 +247,32 @@ def run_sensor_websocket():
         uri, on_message=on_accel_ws_message, on_open=on_accel_ws_open, on_close=on_accel_ws_close)
     ws_app.run_forever()
 
+# endregion
 
 # endregion
 
 # region flask app stuff
 
-# enregion
+
+flaskapp = Flask(__name__)
+
+
+def startflaskserver():
+    flaskapp.run(host='0.0.0.0', port=5000)
+
+
+@flaskapp.route('/')
+def index():
+
+    # this gets a reference to the running bokeh session
+    session = pull_session(url='http://localhost:5006/')
+    # this generates the script to use in my flask page
+    script = server_session(session_id=session.id,
+                            url='http://localhost:5006/')
+    return render_template('testgame.html', bokeh_script=script)
+
+# endregion
+
 
 async def main():
     # Start the camera WebSocket server
@@ -266,8 +296,11 @@ if __name__ == "__main__":
         bokeh_thread = threading.Thread(target=start_bokeh_server, daemon=True)
         bokeh_thread.start()
 
-        # Run the asyncio event loop
+        flask_thread = threading.Thread(target=startflaskserver, daemon=True)
+        flask_thread.start()
+
         asyncio.run(main())
+
     finally:
         cap.release()
         cv2.destroyAllWindows()

@@ -7,7 +7,7 @@ socket.onopen = function(e) {
 };
 
 socket.onmessage = function(event) {
-    console.log(`[message] Data received from server: ${event.data}`);
+    //console.log(`[message] Data received from server: ${event.data}`);
 
     try {
         let displacement = JSON.parse(event.data);  // Receive and parse {dx, dy} from the server
