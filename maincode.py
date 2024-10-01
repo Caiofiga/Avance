@@ -9,16 +9,19 @@ import threading
 from queue import Queue, Empty
 from bokeh.plotting import figure, curdoc
 from bokeh.models import ColumnDataSource
-from bokeh.embed import server_session
+from bokeh.embed import server_session, server_document
 from bokeh.client import pull_session
 from bokeh.server.server import Server
 from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
+from bokeh.io.export import export_svg, export_svgs
 from tornado.ioloop import IOLoop
 import json
 import websocket
 import threading
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, request, session
+import secrets
+import tempfile
 
 # Preface: This is a fucking mess
 
@@ -254,6 +257,7 @@ def run_sensor_websocket():
 
 
 flaskapp = Flask(__name__)
+flaskapp.secret_key = secrets.token_urlsafe(16)
 
 
 def startflaskserver():
@@ -270,6 +274,32 @@ def index():
                             url='http://localhost:5006/')
     return render_template('testgame.html', bokeh_script=script)
 
+
+@flaskapp.route('/save_score', methods=['POST'])
+def save_score():
+    if request.method == 'POST':
+        if not 'name' in session:
+            session['name'] = request.form['name']
+            # need to get a snapshot of the graph and restart it
+            with tempfile.NamedTemporaryFile(suffix='.svg', dir='temp') as f:
+                filename = f.name
+                f.write(export_svg(p))
+
+        session[request.form["game"]] = [request.form['score'], filename]
+
+    match request.form['game']:
+        case 'game1':
+            return redirect('/game2')
+        # and so on for the others
+
+        case _:  # Python and its idiocies annoy me sometimes
+            return redirect('/endgame')
+
+
+@flaskapp.route('/endgame')
+def endgame():
+    playerdata = session.copy()
+    return render_template('endgame.html', playerdata=playerdata)
 # endregion
 
 
