@@ -10,7 +10,7 @@ function moveDiv(value){
  function handleMovement(deltaX) {
      moveDiv(deltaX);  // Move the div by deltaX
  }
- 
+
  function isOverlapping(pos1, pos2){
      return !(pos2.left > pos1.right || 
          pos2.left < pos1.left);
@@ -61,12 +61,24 @@ function moveDiv(value){
          }
      });
      
-     if (check === 5) {
-         const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
-         myModal.show();
-         clearInterval(timeinterval);
-         document.getElementById("modal-text").innerHTML = `Parabéns! Você regou todas as plantas em ${time.toFixed(1)} segundos!`;
-         wateringcan.removeEventListener('overlap', handleOverlap);
+     if (check === 5) { //This means the game is done. Need to redirect to the next page
+        const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+        myModal.show();
+        clearInterval(timeinterval);
+        document.getElementById("modal-text").innerHTML = `Parabéns! Você regou todas as plantas em ${time.toFixed(1)} segundos!`;
+        wateringcan.removeEventListener('overlap', handleOverlap);
+        //need to stop the graph from updating
+        $.ajax({
+            type: "POST",
+            url: "/save_score",
+            data: {
+                score: time.toFixed(1),
+                game: "testgame"
+            },
+            success: function(data){
+                console.log(data);
+            }
+        });
      }
  }
  

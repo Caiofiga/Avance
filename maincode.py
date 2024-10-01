@@ -18,8 +18,7 @@ from tornado.ioloop import IOLoop
 import json
 import websocket
 import threading
-from flask import Flask, render_template, Response
-
+from flask import Flask, render_template
 
 # Preface: This is a fucking mess
 

@@ -1,0 +1,9 @@
+opencv-python
+mediapipe
+numpy
+websockets
+websocket-client
+asyncio
+bokeh
+tornado
+flask

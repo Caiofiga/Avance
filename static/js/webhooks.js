@@ -1,4 +1,3 @@
-// websocket.js
 
 const socket = new WebSocket('ws://localhost:6789');
 
