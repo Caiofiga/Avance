@@ -38,7 +38,7 @@
     left: 90%;
 }
 body {
-    background-image: url("../img/bg.jpg");
-    background-size: contain;
+    background-size: cover;  
+    background-color: lightblue !important;
     background-repeat: no-repeat;
 }

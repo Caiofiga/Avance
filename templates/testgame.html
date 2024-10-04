@@ -15,8 +15,8 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-  <body>
-    <div>{{bokeh_script|safe}}</div>
+  <body style="background-image: url({{ url_for('static', filename='img/bg.svg') }})">
+    <div>{{bokeh_scripts|safe}}</div>
     <div id="plot"></div>
     <!-- Reference the image from Flask's static folder -->
     <img id="movable" src="{{ url_for('static', filename='img/can.png') }}" />

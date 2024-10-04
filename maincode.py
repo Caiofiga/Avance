@@ -268,11 +268,11 @@ def startflaskserver():
 def index():
 
     # this gets a reference to the running bokeh session
-    session = pull_session(url='http://localhost:5006/')
+    # session = pull_session(url='http://localhost:5006/')
     # this generates the script to use in my flask page
-    script = server_session(session_id=session.id,
-                            url='http://localhost:5006/')
-    return render_template('testgame.html', bokeh_script=script)
+    # script = server_session(session_id=session.id,
+    #                        url='http://localhost:5006/')
+    return render_template('testgame.html', bokeh_script=0)
 
 
 @flaskapp.route('/save_score', methods=['POST'])
