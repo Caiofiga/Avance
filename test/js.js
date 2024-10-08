@@ -26,7 +26,7 @@ const g = new Dygraph(
       console.log("Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.246.209:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
       );
   
       socket.onopen = function (e) {
@@ -38,7 +38,6 @@ const g = new Dygraph(
       };
   
       socket.onmessage = function (event) {
-        console.log("Message received in worker:", event.data);
         let message = JSON.parse(event.data);
         let data = message.values; // [x, y, z] values
         let timestamp = message.timestamp;
@@ -83,15 +82,23 @@ const g = new Dygraph(
       file: dataBuffer,
     });
   };
-  
-  // SVG Export Function
-function exportAsSVG() 
-{
- let svg = new C2S(1920, 1080);
 
+  function ExportGraph() {
 
+    let points = permabuffer.map((point) => {
+        return { time: point[0], x: point[1], y: point[2], z: point[3] };
+    
+    });
+    $.ajax({
+        type: "POST",
+        url: "http://localhost:5000/savegraph",
+        contentType: "application/json",  // Set the content type to JSON
+        data: JSON.stringify({ data: points }),  // Serialize the data to JSON
+        success: function (response) {
+            console.log(response);
+        },
+        error: function (xhr, status, error) {
+            console.error("Error during export:", error);
+        }
+    });
 }
-
-
-var variavel = 2;
-  
