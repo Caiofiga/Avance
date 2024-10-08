@@ -295,7 +295,6 @@ def save_score():
         case _:  # Python and its idiocies annoy me sometimes
             return redirect('/endgame')
 
-
 @flaskapp.route('/endgame')
 def endgame():
     playerdata = session.copy()
@@ -333,3 +332,6 @@ if __name__ == "__main__":
     finally:
         cap.release()
         cv2.destroyAllWindows()
+
+
+
