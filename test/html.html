@@ -21,62 +21,7 @@
   </head>
   <body>
     <div id="chart"></div>
-
-    <script type="text/javascript">
-      // Initialize the Dygraph with empty data
-      const g = new Dygraph(
-        document.getElementById("chart"),
-        [], // Initial empty dataset
-        {
-          title: "Real-time Accelerometer Data",
-          labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
-          ylabel: "Acceleration (m/s²)",
-          xlabel: "Time (seconds)",
-          colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
-          strokeWidth: 2.5,
-          drawPoints: true,
-          pointSize: 4,
-          showRoller: false,
-          legend: "always",
-        }
-      );
-
-      let dataBuffer = [];
-      let starttime = 0;
-
-      const socket = new WebSocket(
-        "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
-      );
-
-      socket.onopen = function (e) {
-        console.log("Connected to the server");
-      };
-
-      socket.onerror = function (e) {
-        console.log("Error: " + e);
-      };
-
-      socket.onmessage = function (event) {
-        let message = JSON.parse(event.data);
-        let data = message.values; // [x, y, z] values
-        let timestamp = message.timestamp;
-
-        if (starttime === 0) {
-          starttime = timestamp;
-        }
-
-        // Calculate elapsed time in seconds
-        let elapsedTime = (timestamp - starttime) / 1000000000;
-
-        // Append the new data to the buffer (x, y, z as columns)
-        dataBuffer.push([elapsedTime, data[0], data[1], data[2]]);
-
-        //fuck memory problems, we going RAW
-        // Update the Dygraph with the new data
-        g.updateOptions({
-          file: dataBuffer,
-        });
-      };
-    </script>
+    <button id="exportBtn">Export as SVG</button>
+    <script src="js.js"></script>
   </body>
 </html>
