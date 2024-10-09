@@ -62,23 +62,32 @@ function moveDiv(value){
      });
      
      if (check === 5) { //This means the game is done. Need to redirect to the next page
-        const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+        handleGameWin();
+     }
+ }
+ 
+ function handleGameWin(){
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
         myModal.show();
         clearInterval(timeinterval);
         document.getElementById("modal-text").innerHTML = `Parabéns! Você regou todas as plantas em ${time.toFixed(1)} segundos!`;
         wateringcan.removeEventListener('overlap', handleOverlap);
         //need to stop the graph from updating
+        let points = permabuffer.map((point) => { // this is a dict of all the points in permabuffer
+            return { time: point[0], x: point[1], y: point[2], z: point[3] };
+        }); //pass this through AJAX to the backend
+
+
         $.ajax({
             type: "POST",
             url: "/save_score",
             data: {
                 score: time.toFixed(1),
-                game: "testgame"
+                game: "testgame",
+                graph: points
             },
             success: function(data){
                 console.log(data);
             }
         });
-     }
  }
- 

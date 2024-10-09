@@ -9,7 +9,7 @@ from queue import Queue, Empty
 import json
 import threading
 import uuid
-from flask import Flask, request
+from flask import Flask, request, render_template, session, redirect
 from flask_cors import CORS
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
@@ -99,7 +99,7 @@ def process_video():
             if missing_hand_frames > 10:
                 smoothed_x, smoothed_y = None, None
 
-        # Optional: Draw the center point on the image for reference
+        # Optional: Draw the cente he image for reference
         cv2.circle(image, (int(center_x), int(center_y)), 5, (0, 255, 0), -1)
 
         # Display the resulting image.
@@ -158,13 +158,7 @@ async def broadcaster():
 # endregion
 
 
-# region flask app stuff
-
-
-flaskapp = Flask(__name__)
-cors = CORS(flaskapp)
-
-
+#region graph creation 
 #applying filters and plotting the data
 def butter_lowpass_filter(data, cutoff, fs, order=5):
     nyq = 0.5 * fs
@@ -195,16 +189,9 @@ def get_segmented_data(times, data, start_time, end_time):
                     for i, t in enumerate(times) if start_time <= t < end_time]
     return segment_times, segment_data
 
+def creategraph(graphdata):
 
-@flaskapp.route('/savegraph', methods=['POST'])
-def save():
-    if not request.is_json or 'data' not in request.json:
-        return '400 Bad Request: Invalid or missing JSON', 400
-
-    data = request.get_json()['data']
-
-    if not data:
-        return '400 Bad Request: Empty data', 400
+    data = graphdata.get_json()['data']
 
     try:
         points = [{'time': point['time'], 'x': point['x'],
@@ -284,9 +271,53 @@ def save():
     filename = f"plot_{uuid.uuid4()}.png"
     plt.savefig(filename)
 
-    return 'Graph saved', 200
+    return filename
+#endregion
 
 
+# region flask app stuff
+
+
+flaskapp = Flask(__name__)
+cors = CORS(flaskapp)
+
+
+#region website serving
+@flaskapp.route('/')
+def index():
+
+    # this gets a reference to the running bokeh session
+    # session = pull_session(url='http://localhost:5006/')
+    # this generates the script to use in my flask page
+    # script = server_session(session_id=session.id,
+    #                        url='http://localhost:5006/')
+    return render_template('testgame.html', bokeh_script=0)
+
+
+@flaskapp.route('/save_score', methods=['POST'])
+def save_score():
+    if request.method == 'POST':
+        if not 'name' in session:
+            session['name'] = request.form['name']
+            #create the graph instead
+            data = request.form['data']
+            graphdata = json.loads(data)["graph"] #{ time x y z };
+            graphname = creategraph(graphdata)
+        session[request.form["game"]] = [request.form['score'], graphname]
+
+    match request.form['game']:
+        case 'game1':
+            return redirect('/game2')
+        # and so on for the others
+
+        case _:  # Python and its idiocies annoy me sometimes
+            return redirect('/endgame')
+
+@flaskapp.route('/endgame')
+def endgame():
+    playerdata = session.copy()
+    return render_template('endgame.html', playerdata=playerdata)
+#endregion
 
 def startflaskserver():
     flaskapp.run(host='0.0.0.0', port=5000)

@@ -97,13 +97,7 @@ const g = new Dygraph(
   });}
   function ExportGraph() {
 
-    
 
-    console.log(averages());
-    let points = permabuffer.map((point) => {
-        return { time: point[0], x: point[1], y: point[2], z: point[3] };
-    
-    });
     $.ajax({
         type: "POST",
         url: "http://localhost:5000/savegraph",
