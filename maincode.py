@@ -2,28 +2,20 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import websockets
-import websocket
 import asyncio
 import json
 import threading
 from queue import Queue, Empty
-from bokeh.plotting import figure, curdoc
-from bokeh.models import ColumnDataSource
-from bokeh.embed import server_session, server_document
-from bokeh.client import pull_session
-from bokeh.server.server import Server
-from bokeh.application import Application
-from bokeh.application.handlers.function import FunctionHandler
-from bokeh.io.export import export_svg, export_svgs
-from tornado.ioloop import IOLoop
 import json
-import websocket
 import threading
-from flask import Flask, render_template, redirect, request, session
-import secrets
-import tempfile
+import uuid
+from flask import Flask, request
+from flask_cors import CORS
+from scipy.signal import butter, filtfilt
+import matplotlib.pyplot as plt
 
 # Preface: This is a fucking mess
+
 
 # region Hand Tracking
 
@@ -121,6 +113,7 @@ def process_video():
 
 # endregion
 
+
 # region WebSocket Server
 
 
@@ -164,141 +157,141 @@ async def broadcaster():
 
 # endregion
 
-# region graph creation
-
-# region main graph creation
-data = ColumnDataSource(data=dict(time=[], x=[], y=[], z=[]))
-starttime = 0
-
-x_data_color = "#d32f2f"  # red
-y_data_color = "#7cb342"  # green
-z_data_color = "#0288d1"  # blue
-background_color = "#fafafa"  # light grey
-
-lock = threading.Lock()
-
-p = figure(title="Dados de sensores", x_axis_label="Tempo(segundos)",
-           y_axis_label="Sla mano(Newtons eu acho)", background_fill_color=background_color)
-p.line(x='time', y='x', source=data,
-       line_color=x_data_color, legend_label='Eixo X')
-p.line(x='time', y='y', source=data,
-       line_color=y_data_color, legend_label=' Eixo Y')
-p.line(x='time', y='z', source=data,
-       line_color=z_data_color, legend_label=' Eixo Z')
-p.x_range.follow = "end"
-p.y_range.follow = "end"
-doc = curdoc()
-# endregion
-
-# region bokeh server stuff
-# tornado requires my to provide an Application to its server
-# shitty workaround incoming
-
-
-def modify_doc(document):
-    global doc
-    document.add_root(p)
-    doc = document
-
-
-def on_accel_ws_message(ws, message):
-    global starttime
-
-    # Parse the message from the websocket
-    values = json.loads(message)['values']
-    timestamp = json.loads(message)['timestamp']
-
-    with lock:
-        if not starttime:
-            starttime = timestamp
-        newdata = dict(
-            time=[(timestamp-starttime)/1000000000],
-            x=[values[0]],
-            y=[values[1]],
-            z=[values[2]])
-
-        # Stream the new data to the plot
-        doc.add_next_tick_callback(lambda: data.stream(newdata))
-
-
-def start_bokeh_server():
-    # bokeh has integration with tornado, helping to create multhreading
-    io_loop = IOLoop.current()
-    # PPS : FUCK Multithreading
-    bokeh_app = Application(FunctionHandler(modify_doc))
-    server = Server({'/': bokeh_app}, io_loop=io_loop, port=5006,
-                    # apparently, localhost is not the same as 127.0.0.1
-                    allow_websocket_origin=["localhost:5000", 'localhost:5006', "127.0.0.1:5000"])
-    # 1 fucking hour, goddamn
-    server.start()
-
-    io_loop.start()
-
-
-def on_accel_ws_open(ws):
-    print(f"Accelerometer: Connection opened with {ws.url}")
-
-
-def on_accel_ws_close(ws):
-    print(f"Accelerometer: Connection closed with {ws.url}")
-
-
-def run_sensor_websocket():
-    uri = "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
-    ws_app = websocket.WebSocketApp(
-        uri, on_message=on_accel_ws_message, on_open=on_accel_ws_open, on_close=on_accel_ws_close)
-    ws_app.run_forever()
-
-# endregion
-
-# endregion
 
 # region flask app stuff
 
 
 flaskapp = Flask(__name__)
-flaskapp.secret_key = secrets.token_urlsafe(16)
+cors = CORS(flaskapp)
+
+
+#applying filters and plotting the data
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    y = filtfilt(b, a, data)
+    return y
+
+
+def plot_with_breaks(times, data, label, color, ax, time_limit=200):
+    """Helper function to plot data with line breaks after a time limit."""
+    start_idx = 0
+    for i, time in enumerate(times):
+        if time > time_limit:
+            # Plot the segment from start_idx to i
+            ax.plot(times[start_idx:i], data[start_idx:i],
+                    label=label, color=color)
+            start_idx = i  # Move the start index to the next segment
+            time_limit += 200  # Increase the time limit for the next row
+    # Plot the final segment
+    ax.plot(times[start_idx:], data[start_idx:], label=label, color=color)
+
+#this segments the data and splits it into separate graphs
+def get_segmented_data(times, data, start_time, end_time):
+    """Returns a segment of the times and data arrays between start_time and end_time."""
+    segment_times = [t for t in times if start_time <= t < end_time]
+    segment_data = [data[i]
+                    for i, t in enumerate(times) if start_time <= t < end_time]
+    return segment_times, segment_data
+
+
+@flaskapp.route('/savegraph', methods=['POST'])
+def save():
+    if not request.is_json or 'data' not in request.json:
+        return '400 Bad Request: Invalid or missing JSON', 400
+
+    data = request.get_json()['data']
+
+    if not data:
+        return '400 Bad Request: Empty data', 400
+
+    try:
+        points = [{'time': point['time'], 'x': point['x'],
+                   'y': point['y'], 'z': point['z']} for point in data]
+    except KeyError:
+        return '400 Bad Request: Invalid data format', 400
+
+    times = [point['time'] for point in points]
+    x_vals = [point['x'] for point in points]
+    y_vals = [point['y'] for point in points]
+    z_vals = [point['z'] for point in points]
+
+    # Ensure that data lists are non-empty and of equal length
+    if len(times) == 0 or len(times) != len(x_vals) or len(x_vals) != len(y_vals) or len(y_vals) != len(z_vals):
+        return '400 Bad Request: Data arrays are empty or mismatched in length', 400
+
+    # Filter parameters
+    #shittyly calculated averages: 
+    #{ time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
+    cutoff_freq_x = 0.0375;
+    cutoff_freq_y = 0.0177;
+    cutoff_freq_z = 9.864;
+    sampling_rate = 50.0  # Sampling rate, adjust as needed
+
+    # Apply noise filter (low-pass filter) to the x, y, z data
+    filtered_x = butter_lowpass_filter(x_vals, cutoff_freq_x, sampling_rate)
+    filtered_y = butter_lowpass_filter(y_vals, cutoff_freq_y, sampling_rate)
+    filtered_z = butter_lowpass_filter(z_vals, cutoff_freq_z, sampling_rate)
+    # Calculate how many rows we need based on the time
+    max_time = max(times)
+    num_time_segments = int(np.ceil(max_time / 200.0))
+
+    # Create a figure with 3 * num_time_segments rows and 1 column for subplots
+    plt.figure(figsize=(10, 8 * num_time_segments))
+
+    for i in range(num_time_segments):
+        # Define the time limits for each segment
+        start_time = i * 200
+        end_time = (i + 1) * 200
+
+        # Get the data segment for the current time range
+        seg_times_x, seg_x_vals = get_segmented_data(
+            times, filtered_x, start_time, end_time)
+        seg_times_y, seg_y_vals = get_segmented_data(
+            times, filtered_y, start_time, end_time)
+        seg_times_z, seg_z_vals = get_segmented_data(
+            times, filtered_z, start_time, end_time)
+
+        # Plot X-axis data
+        ax1 = plt.subplot(3 * num_time_segments, 1, i * 3 + 1)
+        ax1.plot(seg_times_x, seg_x_vals, label='Filtered X', color='r')
+        ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax1.set_xlabel('Time (s)')
+        ax1.set_ylabel('Acceleration')
+        ax1.grid(True)
+
+        # Plot Y-axis data
+        ax2 = plt.subplot(3 * num_time_segments, 1, i * 3 + 2)
+        ax2.plot(seg_times_y, seg_y_vals, label='Filtered Y', color='g')
+        ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax2.set_xlabel('Time (s)')
+        ax2.set_ylabel('Acceleration')
+        ax2.grid(True)
+
+        # Plot Z-axis data
+        ax3 = plt.subplot(3 * num_time_segments, 1, i * 3 + 3)
+        ax3.plot(seg_times_z, seg_z_vals, label='Filtered Z', color='b')
+        ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax3.set_xlabel('Time (s)')
+        ax3.set_ylabel('Acceleration')
+        ax3.grid(True)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+
+    # Save the plot to a unique file
+    filename = f"plot_{uuid.uuid4()}.png"
+    plt.savefig(filename)
+
+    return 'Graph saved', 200
+
 
 
 def startflaskserver():
     flaskapp.run(host='0.0.0.0', port=5000)
 
 
-@flaskapp.route('/')
-def index():
-
-    # this gets a reference to the running bokeh session
-    # session = pull_session(url='http://localhost:5006/')
-    # this generates the script to use in my flask page
-    # script = server_session(session_id=session.id,
-    #                        url='http://localhost:5006/')
-    return render_template('testgame.html', bokeh_script=0)
-
-
-@flaskapp.route('/save_score', methods=['POST'])
-def save_score():
-    if request.method == 'POST':
-        if not 'name' in session:
-            session['name'] = request.form['name']
-            # need to get a snapshot of the graph and restart it
-            with tempfile.NamedTemporaryFile(suffix='.svg', dir='temp') as f:
-                filename = f.name
-                f.write(export_svg(p))
-
-        session[request.form["game"]] = [request.form['score'], filename]
-
-    match request.form['game']:
-        case 'game1':
-            return redirect('/game2')
-        # and so on for the others
-
-        case _:  # Python and its idiocies annoy me sometimes
-            return redirect('/endgame')
-
-@flaskapp.route('/endgame')
-def endgame():
-    playerdata = session.copy()
-    return render_template('endgame.html', playerdata=playerdata)
 # endregion
 
 
@@ -311,18 +304,9 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        # this is the sensor gathering thread
-        sensor_thread = threading.Thread(
-            target=run_sensor_websocket, daemon=True)
-        sensor_thread.start()
-
         # this is the camera catching and processing thread
         video_thread = threading.Thread(target=process_video, daemon=True)
         video_thread.start()
-
-        # this is finally the graph creating thread
-        bokeh_thread = threading.Thread(target=start_bokeh_server, daemon=True)
-        bokeh_thread.start()
 
         flask_thread = threading.Thread(target=startflaskserver, daemon=True)
         flask_thread.start()

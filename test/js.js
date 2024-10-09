@@ -26,7 +26,7 @@ const g = new Dygraph(
       console.log("Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.246.209:8080/sensor/connect?type=android.sensor.accelerometer"
       );
   
       socket.onopen = function (e) {
@@ -83,8 +83,23 @@ const g = new Dygraph(
     });
   };
 
+
+  function averages(){
+    permabuffer.forEach((point) => {
+   //each point is a dict of 4 values 
+   //{time, x, y, z}
+      let timeavg = permabuffer.reduce((acc, point) => acc + point[0], 0) / permabuffer.length;
+      let xavg = permabuffer.reduce((acc, point) => acc + point[1], 0) / permabuffer.length;
+      let yavg = permabuffer.reduce((acc, point) => acc + point[2], 0) / permabuffer.length;
+      let zavg = permabuffer.reduce((acc, point) => acc + point[3], 0) / permabuffer.length;
+      console.log({ time: timeavg, x: xavg, y: yavg, z: zavg });
+      return { time: timeavg, x: xavg, y: yavg, z: zavg };
+  });}
   function ExportGraph() {
 
+    
+
+    console.log(averages());
     let points = permabuffer.map((point) => {
         return { time: point[0], x: point[1], y: point[2], z: point[3] };
     
