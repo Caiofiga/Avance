@@ -15,17 +15,16 @@
       integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
       crossorigin="anonymous"
     />
-  
   <body style="background-image: url({{ url_for('static', filename='img/bg.svg') }})">
     <div>{{bokeh_scripts|safe}}</div>
     <div id="plot"></div>
     <!-- Reference the image from Flask's static folder -->
     <img id="movable" src="{{ url_for('static', filename='img/can.png') }}" />
-    <div class="plant" id="plant1" data-watertime="1"></div>
-    <div class="plant" id="plant2" data-watertime="1"></div>
-    <div class="plant" id="plant3" data-watertime="1"></div>
-    <div class="plant" id="plant4" data-watertime="1"></div>
-    <div class="plant" id="plant5" data-watertime="1"></div>
+    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant1" data-watertime="1"></img>
+    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant2" data-watertime="1"></img>
+    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant3" data-watertime="1"></img>
+    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant4" data-watertime="1"></img>
+    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant5" data-watertime="1"></img>
 
     <!-- Victory Modal -->
     <div
@@ -60,6 +59,16 @@
         </div>
       </div>
     </div>
+
+    <script>
+      window.static_folder = {    
+        0.75: "{{ url_for('static', filename='img/p2.png') }}",
+        0.5: "{{ url_for('static', filename='img/p3.png') }}",
+        0.25: "{{ url_for('static', filename='img/p4.png') }}",
+        0.0: "{{ url_for('static', filename='img/p5.png') }}"}
+        //need to store this in a global variable to use in JS
+      </script>
+      
 
     <!-- Bootstrap and JS scripts -->
     <script

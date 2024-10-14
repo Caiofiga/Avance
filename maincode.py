@@ -281,7 +281,6 @@ def creategraph(graphdata):
 flaskapp = Flask(__name__)
 cors = CORS(flaskapp)
 
-
 #region website serving
 @flaskapp.route('/')
 def index():

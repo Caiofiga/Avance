@@ -46,17 +46,30 @@ function moveDiv(value){
  
  wateringcan.addEventListener('overlap', handleOverlap);
  
+
  function handleOverlap(event) {
      const plant = document.getElementById(event.detail.plantId);
      if(plant.dataset.watertime >= parseFloat(0)){
          plant.dataset.watertime = `${parseFloat(plant.dataset.watertime) - 0.1}`;
-         if (plant.dataset.watertime <= parseFloat(0)) {
-             plant.style.background = "green";
+
+        let waterTime = parseFloat(plant.dataset.watertime);
+         
+        if (waterTime >= 0.75 && waterTime <= 1.0) {
+             plant.src =window.static_folder[0.75];
+             plant.style
+         } else if (waterTime >= 0.5 && waterTime < 0.75) {
+             plant.src = window.static_folder[0.5];
+         } else if (waterTime >= 0.25 && waterTime < 0.5) {
+             plant.src = window.static_folder[0.25];
+         } else if (waterTime >= 0.0 && waterTime < 0.25) {
+             plant.src = window.static_folder[0.0];
+             plant.dataset.completed = "true";
          }
      }
      let check = 0;
      plants.forEach((plant) => {
-         if (plant.style.background === "green") {
+        console.log(plant.dataset.waterTime);
+         if (plant.dataset.completed === "true") {
              check++;
          }
      });

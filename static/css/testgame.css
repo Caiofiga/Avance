@@ -17,9 +17,9 @@
     position: absolute;
     bottom: 10%; /* Positions them 10% from the bottom of the screen */
     width: 200px;
-    height: 100px;
-    background: red;
+    height: auto;
     transform: translateX(-50%);
+
 }
 
 #plant1 {
