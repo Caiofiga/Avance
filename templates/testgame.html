@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script
+    type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.js"
+  ></script>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.css"
+  />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Test Game Lads</title>
@@ -78,8 +86,9 @@
     ></script>
 
     <!-- Reference the JS files from Flask's static folder -->
-    <script src="{{ url_for('static', filename='js/testgamelogic.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/webhooks.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/graphmaking.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/testgamelogic.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/webhooks.js') }}"></script>
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
       integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="

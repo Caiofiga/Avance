@@ -1,4 +1,4 @@
-
+import {handleMovement} from './testgamelogic.js';
 const socket = new WebSocket('ws://localhost:6789');
 
 socket.onopen = function(e) {

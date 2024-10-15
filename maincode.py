@@ -13,6 +13,7 @@ from flask import Flask, request, render_template, session, redirect
 from flask_cors import CORS
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
+import secrets
 
 # Preface: This is a fucking mess
 
@@ -189,7 +190,7 @@ def get_segmented_data(times, data, start_time, end_time):
                     for i, t in enumerate(times) if start_time <= t < end_time]
     return segment_times, segment_data
 
-def creategraph(graphdata):
+def creategraph(graphdata, overlaps):
 
     data = graphdata.get_json()['data']
 
@@ -211,9 +212,9 @@ def creategraph(graphdata):
     # Filter parameters
     #shittyly calculated averages: 
     #{ time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
-    cutoff_freq_x = 0.0375;
-    cutoff_freq_y = 0.0177;
-    cutoff_freq_z = 9.864;
+    cutoff_freq_x = 0.0375
+    cutoff_freq_y = 0.0177
+    cutoff_freq_z = 9.864
     sampling_rate = 50.0  # Sampling rate, adjust as needed
 
     # Apply noise filter (low-pass filter) to the x, y, z data
@@ -227,7 +228,8 @@ def creategraph(graphdata):
     # Create a figure with 3 * num_time_segments rows and 1 column for subplots
     plt.figure(figsize=(10, 8 * num_time_segments))
 
-    for i in range(num_time_segments):
+    for i in range(num_time_segments): #this is when we loop-de-loop
+        #somehow, I need to plot the overlap times here
         # Define the time limits for each segment
         start_time = i * 200
         end_time = (i + 1) * 200
@@ -246,6 +248,14 @@ def creategraph(graphdata):
         ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax1.set_xlabel('Time (s)')
         ax1.set_ylabel('Acceleration')
+        for overlap in overlaps: #overlap value is the time followed possibly 'end'
+            overlap_time = overlap.value.split('')
+            end = overlap_time[1].lower() == 'end'
+            if overlap.value > start_time and overlap.value < end_time:
+                if end:
+                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+                else:
+                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
         ax1.grid(True)
 
         # Plot Y-axis data
@@ -254,6 +264,15 @@ def creategraph(graphdata):
         ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax2.set_xlabel('Time (s)')
         ax2.set_ylabel('Acceleration')
+        for overlap in overlaps: #overlap value is the time followed possibly 'end'
+            overlap_time = overlap.value.split('')
+            end = overlap_time[1].lower() == 'end'
+            if overlap.value > start_time and overlap.value < end_time:
+                if end:
+                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+                else:
+                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
+        
         ax2.grid(True)
 
         # Plot Z-axis data
@@ -262,6 +281,14 @@ def creategraph(graphdata):
         ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax3.set_xlabel('Time (s)')
         ax3.set_ylabel('Acceleration')
+        for overlap in overlaps: #overlap value is the time followed possibly 'end'
+            overlap_time = float(overlap.value.split('')[0])
+            end = overlap.value.split('')[1].lower() == 'end'
+            if overlap.value > start_time and overlap.value < end_time:
+                if end:
+                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+                else:
+                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
         ax3.grid(True)
 
     # Adjust layout to prevent overlap
@@ -280,6 +307,8 @@ def creategraph(graphdata):
 
 flaskapp = Flask(__name__)
 cors = CORS(flaskapp)
+flaskapp.secret_key = secrets.token_urlsafe(16)
+
 
 #region website serving
 @flaskapp.route('/')
@@ -301,7 +330,8 @@ def save_score():
             #create the graph instead
             data = request.form['data']
             graphdata = json.loads(data)["graph"] #{ time x y z };
-            graphname = creategraph(graphdata)
+            overlaps = json.loads(data)["overlaps"] # {plantid: time end?}
+            graphname = creategraph(graphdata, overlaps)
         session[request.form["game"]] = [request.form['score'], graphname]
 
     match request.form['game']:

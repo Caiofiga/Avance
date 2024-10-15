@@ -1,4 +1,5 @@
-function moveDiv(value){
+import { permabuffer } from './graphmaking.js';
+function moveDiv(value){    
     let div = document.getElementById("movable");
      let plant1pos = document.getElementById("plant1").getBoundingClientRect();
      let plant5pos = document.getElementById("plant5").getBoundingClientRect();
@@ -7,7 +8,7 @@ function moveDiv(value){
  }
  
  // This function will be triggered by the WebSocket logic
- function handleMovement(deltaX) {
+ export function handleMovement(deltaX) {
      moveDiv(deltaX);  // Move the div by deltaX
  }
 
@@ -47,10 +48,15 @@ function moveDiv(value){
  wateringcan.addEventListener('overlap', handleOverlap);
  
 
+ let overlaptimes = {}; //we will use this to pass the time of overlap to the backend
  function handleOverlap(event) {
      const plant = document.getElementById(event.detail.plantId);
      if(plant.dataset.watertime >= parseFloat(0)){
          plant.dataset.watertime = `${parseFloat(plant.dataset.watertime) - 0.1}`;
+
+         if (!overlaptimes[plant.id]) { overlaptimes[plant.id] = []; }
+
+         overlaptimes[plant.id].push(time);
 
         let waterTime = parseFloat(plant.dataset.watertime);
          
@@ -64,6 +70,7 @@ function moveDiv(value){
          } else if (waterTime >= 0.0 && waterTime < 0.25) {
              plant.src = window.static_folder[0.0];
              plant.dataset.completed = "true";
+            overlaptimes[plant.id].push(time + ' end')
          }
      }
      let check = 0;
@@ -95,9 +102,11 @@ function moveDiv(value){
             type: "POST",
             url: "/save_score",
             data: {
+                name: 'name',
                 score: time.toFixed(1),
                 game: "testgame",
-                graph: points
+                graph: points,
+                overlaps: overlaptimes
             },
             success: function(data){
                 console.log(data);

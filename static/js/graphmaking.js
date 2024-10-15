@@ -1,4 +1,5 @@
-// Initialize the Dygraph with empty data
+ // Initialize the Dygraph with empty data
+ /*
 const g = new Dygraph(
     document.getElementById("chart"),
     [], // Initial empty dataset
@@ -15,8 +16,8 @@ const g = new Dygraph(
       legend: "always",
     }
   );
-  
-  const permabuffer = [];
+  */
+ export const permabuffer = [];
   let dataBuffer = [];
   
   // Inline web worker creation
