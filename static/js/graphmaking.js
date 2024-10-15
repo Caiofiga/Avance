@@ -1,5 +1,6 @@
  // Initialize the Dygraph with empty data
  /*
+ Ill use this for my admin page I guess
 const g = new Dygraph(
     document.getElementById("chart"),
     [], // Initial empty dataset
