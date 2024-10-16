@@ -64,8 +64,7 @@ function sendToServer(message) {
 
 //region Sensor Worker
 export const permabuffer = [];
-  let dataBuffer = [];
-  
+
   // Inline web worker creation
   const workerCode = `
     onmessage = function (e) {
@@ -73,7 +72,7 @@ export const permabuffer = [];
       console.log("Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.246.209:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.234.108:8080/sensor/connect?type=android.sensor.accelerometer"
       );
   
       socket.onopen = function (e) {
@@ -117,17 +116,9 @@ export const permabuffer = [];
     let z = e.data.z;
   
     // Append the new data to the buffer (timestamp, x, y, z)
-    dataBuffer.push([timestamp, x, y, z]);
-  
-    // Buffer out old data from IRT graph, but keep it stored in permabuffer
-    if (dataBuffer.length > 100) {
-      permabuffer.push(dataBuffer.shift());
-    }
-  
-    // Update the Dygraph with the new data
-    g.updateOptions({
-      file: dataBuffer,
-    });
+    permabuffer.push([timestamp, x, y, z]);
+
   };
+
 
 //endregion

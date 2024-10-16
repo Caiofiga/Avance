@@ -192,7 +192,7 @@ def get_segmented_data(times, data, start_time, end_time):
 
 def creategraph(graphdata, overlaps):
 
-    data = graphdata.get_json()['data']
+    data = graphdata
 
     try:
         points = [{'time': point['time'], 'x': point['x'],
@@ -248,14 +248,21 @@ def creategraph(graphdata, overlaps):
         ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax1.set_xlabel('Time (s)')
         ax1.set_ylabel('Acceleration')
-        for overlap in overlaps: #overlap value is the time followed possibly 'end'
-            overlap_time = overlap.value.split('')
-            end = overlap_time[1].lower() == 'end'
-            if overlap.value > start_time and overlap.value < end_time:
-                if end:
-                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
+            for value in overlap_value:
+                if type(value) == str:
+                    value_time = value.split(' ')
+                    overlap_time = float(value_time[0])
+                    end = value_time[1].lower() == 'end'
+                    if overlap_time > start_time and overlap_time < end_time:
+                        if end:
+                            ax1.vlines(overlap_time, ax1.get_ylim()[0], ax1.get_ylim()[1], color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
+
+                        else:
+                            ax1.vlines(overlap_time, ax1.get_ylim()[0], ax1.get_ylim()[1], color='black', label=f'finished plant{overlap_key}')
                 else:
-                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
+                    if value > start_time and value < end_time:
+                        ax1.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
         ax1.grid(True)
 
         # Plot Y-axis data
@@ -264,14 +271,20 @@ def creategraph(graphdata, overlaps):
         ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax2.set_xlabel('Time (s)')
         ax2.set_ylabel('Acceleration')
-        for overlap in overlaps: #overlap value is the time followed possibly 'end'
-            overlap_time = overlap.value.split('')
-            end = overlap_time[1].lower() == 'end'
-            if overlap.value > start_time and overlap.value < end_time:
-                if end:
-                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
+            for value in overlap_value:
+                if type(value) == str:
+                    value_time = value.split(' ')
+                    overlap_time = float(value_time[0])
+                    end = value_time[1].lower() == 'end'
+                    if overlap_time > start_time and overlap_time < end_time:
+                        if end:
+                            ax2.vlines(overlap_time, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
+                        else:
+                            ax2.vlines(overlap_time, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
                 else:
-                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
+                    if value > start_time and value < end_time:
+                        ax2.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
         
         ax2.grid(True)
 
@@ -281,14 +294,20 @@ def creategraph(graphdata, overlaps):
         ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax3.set_xlabel('Time (s)')
         ax3.set_ylabel('Acceleration')
-        for overlap in overlaps: #overlap value is the time followed possibly 'end'
-            overlap_time = float(overlap.value.split('')[0])
-            end = overlap.value.split('')[1].lower() == 'end'
-            if overlap.value > start_time and overlap.value < end_time:
-                if end:
-                    ax1.vlines(overlap.value, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap.key}')
+        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
+            for value in overlap_value:
+                if type(value) == str:
+                    value_time = value.split(' ')
+                    overlap_time = float(value_time[0])
+                    end = value_time[1].lower() == 'end'
+                    if overlap_time > start_time and overlap_time < end_time:
+                        if end:
+                            ax3.vlines(overlap_time, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
+                        else:
+                            ax3.vlines(overlap_time, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
                 else:
-                    ax1.vlines(overlap.value, 0, 1, color='black', label=f'overlapped plant{overlap.key}')
+                    if value > start_time and value < end_time:
+                        ax3.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
         ax3.grid(True)
 
     # Adjust layout to prevent overlap
@@ -325,13 +344,14 @@ def index():
 @flaskapp.route('/save_score', methods=['POST'])
 def save_score():
     if request.method == 'POST':
-        if not 'name' in session:
-            session['name'] = request.form['name']
-            #create the graph instead
-            data = request.form['data']
-            graphdata = json.loads(data)["graph"] #{ time x y z };
-            overlaps = json.loads(data)["overlaps"] # {plantid: time end?}
-            graphname = creategraph(graphdata, overlaps)
+        if 'name' not in session:
+            session['name'] = request.json['name']
+        #create the graph instead
+        data = request.json
+        graphdata = data["graph"] #{ time x y z };
+        overlaps = data["overlaps"] # {plantid: time end?}
+        graphname = creategraph(graphdata, overlaps)
+
         session[request.form["game"]] = [request.form['score'], graphname]
 
     match request.form['game']:

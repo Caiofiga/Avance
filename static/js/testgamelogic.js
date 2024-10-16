@@ -1,4 +1,4 @@
-import { permabuffer } from './graphmaking.js';
+import { permabuffer } from './webhooks.js';
 function moveDiv(value){    
     let div = document.getElementById("movable");
      let plant1pos = document.getElementById("plant1").getBoundingClientRect();
@@ -75,7 +75,6 @@ function moveDiv(value){
      }
      let check = 0;
      plants.forEach((plant) => {
-        console.log(plant.dataset.waterTime);
          if (plant.dataset.completed === "true") {
              check++;
          }
@@ -95,19 +94,18 @@ function moveDiv(value){
         //need to stop the graph from updating
         let points = permabuffer.map((point) => { // this is a dict of all the points in permabuffer
             return { time: point[0], x: point[1], y: point[2], z: point[3] };
-        }); //pass this through AJAX to the backend
-
-
+        }); //pass this through AJAX to the backend]
         $.ajax({
             type: "POST",
             url: "/save_score",
-            data: {
+            data: JSON.stringify({
                 name: 'name',
                 score: time.toFixed(1),
                 game: "testgame",
                 graph: points,
                 overlaps: overlaptimes
-            },
+            }),
+            contentType: "application/json",
             success: function(data){
                 console.log(data);
             }
