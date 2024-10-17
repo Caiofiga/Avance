@@ -72,7 +72,7 @@ export const permabuffer = [];
       console.log("Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.234.108:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
       );
   
       socket.onopen = function (e) {

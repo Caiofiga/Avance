@@ -9,7 +9,7 @@ from queue import Queue, Empty
 import json
 import threading
 import uuid
-from flask import Flask, request, render_template, session, redirect
+from flask import Flask, request, render_template, session, redirect, url_for, jsonify
 from flask_cors import CORS
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
@@ -159,8 +159,8 @@ async def broadcaster():
 # endregion
 
 
-#region graph creation 
-#applying filters and plotting the data
+# region graph creation
+# applying filters and plotting the data
 def butter_lowpass_filter(data, cutoff, fs, order=5):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
@@ -182,13 +182,16 @@ def plot_with_breaks(times, data, label, color, ax, time_limit=200):
     # Plot the final segment
     ax.plot(times[start_idx:], data[start_idx:], label=label, color=color)
 
-#this segments the data and splits it into separate graphs
+# this segments the data and splits it into separate graphs
+
+
 def get_segmented_data(times, data, start_time, end_time):
     """Returns a segment of the times and data arrays between start_time and end_time."""
     segment_times = [t for t in times if start_time <= t < end_time]
     segment_data = [data[i]
                     for i, t in enumerate(times) if start_time <= t < end_time]
     return segment_times, segment_data
+
 
 def creategraph(graphdata, overlaps):
 
@@ -210,8 +213,8 @@ def creategraph(graphdata, overlaps):
         return '400 Bad Request: Data arrays are empty or mismatched in length', 400
 
     # Filter parameters
-    #shittyly calculated averages: 
-    #{ time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
+    # shittyly calculated averages:
+    # { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
     cutoff_freq_x = 0.0375
     cutoff_freq_y = 0.0177
     cutoff_freq_z = 9.864
@@ -228,8 +231,8 @@ def creategraph(graphdata, overlaps):
     # Create a figure with 3 * num_time_segments rows and 1 column for subplots
     plt.figure(figsize=(10, 8 * num_time_segments))
 
-    for i in range(num_time_segments): #this is when we loop-de-loop
-        #somehow, I need to plot the overlap times here
+    for i in range(num_time_segments):  # this is when we loop-de-loop
+        # somehow, I need to plot the overlap times here
         # Define the time limits for each segment
         start_time = i * 200
         end_time = (i + 1) * 200
@@ -248,21 +251,35 @@ def creategraph(graphdata, overlaps):
         ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax1.set_xlabel('Time (s)')
         ax1.set_ylabel('Acceleration')
-        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
-            for value in overlap_value:
-                if type(value) == str:
-                    value_time = value.split(' ')
-                    overlap_time = float(value_time[0])
-                    end = value_time[1].lower() == 'end'
-                    if overlap_time > start_time and overlap_time < end_time:
-                        if end:
-                            ax1.vlines(overlap_time, ax1.get_ylim()[0], ax1.get_ylim()[1], color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
 
-                        else:
-                            ax1.vlines(overlap_time, ax1.get_ylim()[0], ax1.get_ylim()[1], color='black', label=f'finished plant{overlap_key}')
+        for plantid, times in overlaps.items():
+            red_line_plotted = False  # Track if a red line has been plotted for this plantid
+            match plantid:  # for coloring shenanigans
+                case 'plant1':
+                    color = 'red'
+                case 'plant2':
+                    color = 'green'
+                case 'plant3':
+                    color = 'blue'
+                case 'plant4':
+                    color = 'yellow'
+                case 'plant5':
+                    color = 'black'
+                case _:
+                    color = 'orange'
+            for time_value in times:
+                # Check if the time_value is a string (indicating it has 'end')
+                if isinstance(time_value, str):
+                    ax1.axvline(x=float(time_value.rstrip('end')), color=color,
+                                # Red line
+                                linestyle='--', label=f'Plant {plantid} with end')
+                    red_line_plotted = True  # Set flag to True since red line is plotted
+                    break  # Stop plotting lines after the first red line
                 else:
-                    if value > start_time and value < end_time:
-                        ax1.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
+                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
+                        ax1.axvline(x=time_value, color=color, linestyle='--',
+                                    # Black line
+                                    label=f'Plant {plantid} without end')
         ax1.grid(True)
 
         # Plot Y-axis data
@@ -271,22 +288,38 @@ def creategraph(graphdata, overlaps):
         ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax2.set_xlabel('Time (s)')
         ax2.set_ylabel('Acceleration')
-        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
-            for value in overlap_value:
-                if type(value) == str:
-                    value_time = value.split(' ')
-                    overlap_time = float(value_time[0])
-                    end = value_time[1].lower() == 'end'
-                    if overlap_time > start_time and overlap_time < end_time:
-                        if end:
-                            ax2.vlines(overlap_time, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
-                        else:
-                            ax2.vlines(overlap_time, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
-                else:
-                    if value > start_time and value < end_time:
-                        ax2.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
-        
         ax2.grid(True)
+
+        for plantid, times in overlaps.items():
+            red_line_plotted = False  # Track if a red line has been plotted for this plantid
+            match plantid:  # for coloring shenanigans
+                case 'plant1':
+                    color = 'red'
+                case 'plant2':
+                    color = 'green'
+                case 'plant3':
+                    color = 'blue'
+                case 'plant4':
+                    color = 'yellow'
+                case 'plant5':
+                    color = 'black'
+                case _:
+                    color = 'orange'
+            for time_value in times:
+                # Check if the time_value is a string (indicating it has 'end')
+                if isinstance(time_value, str):
+                    ax2.axvline(x=float(time_value.rstrip('end')), color=color,
+                                # Red line
+                                linestyle='--', label=f'Plant {plantid} with end')
+                    red_line_plotted = True  # Set flag to True since red line is plotted
+                    break  # Stop plotting lines after the first red line
+                else:
+                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
+                        ax2.axvline(x=time_value, color=color, linestyle='--',
+                                    # Black line
+                                    label=f'Plant {plantid} without end')
+
+        # Ensure the vertical lines are labeled in the plot
 
         # Plot Z-axis data
         ax3 = plt.subplot(3 * num_time_segments, 1, i * 3 + 3)
@@ -294,21 +327,36 @@ def creategraph(graphdata, overlaps):
         ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax3.set_xlabel('Time (s)')
         ax3.set_ylabel('Acceleration')
-        for overlap_key, overlap_value in overlaps.items(): #overlap value is the time followed possibly 'end'
-            for value in overlap_value:
-                if type(value) == str:
-                    value_time = value.split(' ')
-                    overlap_time = float(value_time[0])
-                    end = value_time[1].lower() == 'end'
-                    if overlap_time > start_time and overlap_time < end_time:
-                        if end:
-                            ax3.vlines(overlap_time, 0, 1, color='red', linestyles='dashed', label=f'finished plant{overlap_key}')
-                        else:
-                            ax3.vlines(overlap_time, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
-                else:
-                    if value > start_time and value < end_time:
-                        ax3.vlines(value, 0, 1, color='black', label=f'overlapped plant{overlap_key}')
         ax3.grid(True)
+
+        for plantid, times in overlaps.items():
+            red_line_plotted = False  # Track if a red line has been plotted for this plantid
+            match plantid:  # for coloring shenanigans
+                case 'plant1':
+                    color = 'red'
+                case 'plant2':
+                    color = 'green'
+                case 'plant3':
+                    color = 'blue'
+                case 'plant4':
+                    color = 'yellow'
+                case 'plant5':
+                    color = 'black'
+                case _:
+                    color = 'orange'
+            for time_value in times:
+                # Check if the time_value is a string (indicating it has 'end')
+                if isinstance(time_value, str):
+                    ax3.axvline(x=float(time_value.rstrip('end')), color=color,
+                                # Red line
+                                linestyle='--', label=f'Plant {plantid} with end')
+                    red_line_plotted = True  # Set flag to True since red line is plotted
+                    break  # Stop plotting lines after the first red line
+                else:
+                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
+                        ax3.axvline(x=time_value, color=color, linestyle='--',
+                                    # Black line
+                                    label=f'Plant {plantid} without end')
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
@@ -318,7 +366,7 @@ def creategraph(graphdata, overlaps):
     plt.savefig(filename)
 
     return filename
-#endregion
+# endregion
 
 
 # region flask app stuff
@@ -329,7 +377,7 @@ cors = CORS(flaskapp)
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
 
-#region website serving
+# region website serving
 @flaskapp.route('/')
 def index():
 
@@ -346,27 +394,29 @@ def save_score():
     if request.method == 'POST':
         if 'name' not in session:
             session['name'] = request.json['name']
-        #create the graph instead
+        # create the graph instead
         data = request.json
-        graphdata = data["graph"] #{ time x y z };
-        overlaps = data["overlaps"] # {plantid: time end?}
+        graphdata = data["graph"]  # { time x y z };
+        overlaps = data["overlaps"]  # {plantid: time end?}
         graphname = creategraph(graphdata, overlaps)
 
         session[request.form["game"]] = [request.form['score'], graphname]
 
     match request.form['game']:
         case 'game1':
-            return redirect('/game2')
+            return jsonify({'message': 'Score saved for game 1'})
         # and so on for the others
 
         case _:  # Python and its idiocies annoy me sometimes
-            return redirect('/endgame')
+            return jsonify({'message': 'Score saved for game 1'})
+
 
 @flaskapp.route('/endgame')
 def endgame():
     playerdata = session.copy()
     return render_template('endgame.html', playerdata=playerdata)
-#endregion
+# endregion
+
 
 def startflaskserver():
     flaskapp.run(host='0.0.0.0', port=5000)
@@ -396,6 +446,3 @@ if __name__ == "__main__":
     finally:
         cap.release()
         cv2.destroyAllWindows()
-
-
-
