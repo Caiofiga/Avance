@@ -220,10 +220,10 @@ def creategraph(graphdata, overlaps):
     cutoff_freq_z = 9.864
     sampling_rate = 50.0  # Sampling rate, adjust as needed
 
-    # Apply noise filter (low-pass filter) to the x, y, z data
-    filtered_x = butter_lowpass_filter(x_vals, cutoff_freq_x, sampling_rate)
-    filtered_y = butter_lowpass_filter(y_vals, cutoff_freq_y, sampling_rate)
-    filtered_z = butter_lowpass_filter(z_vals, cutoff_freq_z, sampling_rate)
+    filtered_x = x_vals
+    filtered_y = y_vals
+    filtered_z = z_vals
+
     # Calculate how many rows we need based on the time
     max_time = max(times)
     num_time_segments = int(np.ceil(max_time / 200.0))
@@ -251,38 +251,8 @@ def creategraph(graphdata, overlaps):
         ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
         ax1.set_xlabel('Time (s)')
         ax1.set_ylabel('Acceleration')
-
-        for plantid, times in overlaps.items():
-            red_line_plotted = False  # Track if a red line has been plotted for this plantid
-            match plantid:  # for coloring shenanigans
-                case 'plant1':
-                    color = 'red'
-                case 'plant2':
-                    color = 'green'
-                case 'plant3':
-                    color = 'blue'
-                case 'plant4':
-                    color = 'yellow'
-                case 'plant5':
-                    color = 'black'
-                case _:
-                    color = 'orange'
-            for time_value in times:
-                # Check if the time_value is a string (indicating it has 'end')
-                if isinstance(time_value, str):
-                    ax1.axvline(x=float(time_value.rstrip('end')), color=color,
-                                # Red line
-                                linestyle='--', label=f'Plant {plantid} with end')
-                    red_line_plotted = True  # Set flag to True since red line is plotted
-                    break  # Stop plotting lines after the first red line
-                else:
-                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
-                        ax1.axvline(x=time_value, color=color, linestyle='--',
-                                    # Black line
-                                    label=f'Plant {plantid} without end')
         ax1.grid(True)
 
-        # Plot Y-axis data
         ax2 = plt.subplot(3 * num_time_segments, 1, i * 3 + 2)
         ax2.plot(seg_times_y, seg_y_vals, label='Filtered Y', color='g')
         ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
@@ -290,38 +260,6 @@ def creategraph(graphdata, overlaps):
         ax2.set_ylabel('Acceleration')
         ax2.grid(True)
 
-        for plantid, times in overlaps.items():
-            red_line_plotted = False  # Track if a red line has been plotted for this plantid
-            match plantid:  # for coloring shenanigans
-                case 'plant1':
-                    color = 'red'
-                case 'plant2':
-                    color = 'green'
-                case 'plant3':
-                    color = 'blue'
-                case 'plant4':
-                    color = 'yellow'
-                case 'plant5':
-                    color = 'black'
-                case _:
-                    color = 'orange'
-            for time_value in times:
-                # Check if the time_value is a string (indicating it has 'end')
-                if isinstance(time_value, str):
-                    ax2.axvline(x=float(time_value.rstrip('end')), color=color,
-                                # Red line
-                                linestyle='--', label=f'Plant {plantid} with end')
-                    red_line_plotted = True  # Set flag to True since red line is plotted
-                    break  # Stop plotting lines after the first red line
-                else:
-                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
-                        ax2.axvline(x=time_value, color=color, linestyle='--',
-                                    # Black line
-                                    label=f'Plant {plantid} without end')
-
-        # Ensure the vertical lines are labeled in the plot
-
-        # Plot Z-axis data
         ax3 = plt.subplot(3 * num_time_segments, 1, i * 3 + 3)
         ax3.plot(seg_times_z, seg_z_vals, label='Filtered Z', color='b')
         ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
@@ -329,34 +267,68 @@ def creategraph(graphdata, overlaps):
         ax3.set_ylabel('Acceleration')
         ax3.grid(True)
 
-        for plantid, times in overlaps.items():
-            red_line_plotted = False  # Track if a red line has been plotted for this plantid
-            match plantid:  # for coloring shenanigans
-                case 'plant1':
-                    color = 'red'
-                case 'plant2':
-                    color = 'green'
-                case 'plant3':
-                    color = 'blue'
-                case 'plant4':
-                    color = 'yellow'
-                case 'plant5':
-                    color = 'black'
-                case _:
-                    color = 'orange'
-            for time_value in times:
-                # Check if the time_value is a string (indicating it has 'end')
-                if isinstance(time_value, str):
-                    ax3.axvline(x=float(time_value.rstrip('end')), color=color,
-                                # Red line
-                                linestyle='--', label=f'Plant {plantid} with end')
-                    red_line_plotted = True  # Set flag to True since red line is plotted
-                    break  # Stop plotting lines after the first red line
-                else:
-                    if not red_line_plotted:  # Only plot black lines if no red line has been plotted yet
-                        ax3.axvline(x=time_value, color=color, linestyle='--',
-                                    # Black line
-                                    label=f'Plant {plantid} without end')
+    for plantid, times in overlaps.items():
+        # Sort the times to ensure proper ordering of events
+        times = sorted(times, key=lambda x: float(
+            x.rstrip('end')) if isinstance(x, str) else x)
+
+        # Color assignment based on plantid
+        match plantid:
+            case 'plant1':
+                color = 'red'
+            case 'plant2':
+                color = 'green'
+            case 'plant3':
+                color = 'blue'
+            case 'plant4':
+                color = 'yellow'
+            case 'plant5':
+                color = 'black'
+            case _:
+                color = 'orange'
+
+        dashed_line = False  # Track if a dashed line has been plotted for the plant
+
+        # Plot vertical lines on all three axes (ax1, ax2, ax3)
+        for i, time_value in enumerate(times):
+            # Determine if time_value has 'end'
+            if isinstance(time_value, str):
+                time_value_float = float(time_value.rstrip('end'))
+
+                # Check if the next value is a float with the same time
+                if i + 1 < len(times) and isinstance(times[i + 1], float) and times[i + 1] == time_value_float:
+                    # Skip the solid line at this time since the dashed line takes priority
+                    continue
+
+                if dashed_line:
+                    # If a dashed line has already been plotted, skip plotting further lines for this plant
+                    continue
+
+                # Plot red dashed line on all axes
+                ax1.axvline(x=time_value_float, color=color, linestyle='--',
+                            label=f'Plant {plantid} with end at {time_value}')
+                ax2.axvline(x=time_value_float, color=color, linestyle='--',
+                            label=f'Plant {plantid} with end at {time_value}')
+                ax3.axvline(x=time_value_float, color=color, linestyle='--',
+                            label=f'Plant {plantid} with end at {time_value}')
+
+                # Mark that a dashed line has been plotted
+                dashed_line = True
+
+            else:
+                # Check if the next value is a string with the same time
+                if i + 1 < len(times) and isinstance(times[i + 1], str) and float(times[i + 1].rstrip('end')) == time_value:
+                    # Skip the solid line since the next dashed line takes priority
+                    continue
+
+                # Only plot solid lines if no dashed line has been plotted yet
+                if not dashed_line:
+                    ax1.axvline(x=time_value, color=color, linestyle='-',
+                                label=f'Plant {plantid} without end at {time_value}')
+                    ax2.axvline(x=time_value, color=color, linestyle='-',
+                                label=f'Plant {plantid} without end at {time_value}')
+                    ax3.axvline(x=time_value, color=color, linestyle='-',
+                                label=f'Plant {plantid} without end at {time_value}')
 
     # Adjust layout to prevent overlap
     plt.tight_layout()
