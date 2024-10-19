@@ -1,0 +1,53 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  .folder {
+    margin-bottom: 10px;
+    transition: all 0.5s ease;
+    overflow: hidden;
+  }
+
+  .folder-content {
+    display: none;
+    padding: 20px;
+  }
+
+  .folder-title {
+    cursor: pointer;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    padding: 10px;
+  }
+
+  /* Fullscreen styles */
+  .fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999;
+    background-color: white;
+    overflow: auto;
+    margin: 0;
+    transition: all 0.5s ease;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .circle{
+    height: 25px;
+    width: 25px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block;
+  }
