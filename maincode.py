@@ -11,6 +11,7 @@ import threading
 import uuid
 from flask import Flask, request, render_template, session, redirect, url_for, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 import secrets
@@ -115,7 +116,7 @@ def process_video():
 # endregion
 
 
-# region WebSocket Server
+# region Hand WebSocket Server
 
 
 # Global set of connected clients
@@ -152,6 +153,7 @@ async def broadcaster():
         else:
             if connected_clients:
                 message = json.dumps(displacement)
+
                 await asyncio.gather(*(client.send(message) for client in connected_clients))
             displacement_queue.task_done()
 
@@ -346,6 +348,7 @@ def creategraph(graphdata, overlaps):
 
 flaskapp = Flask(__name__)
 cors = CORS(flaskapp)
+socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
 
@@ -389,9 +392,21 @@ def endgame():
     return render_template('endgame.html', playerdata=playerdata)
 # endregion
 
+# region admin websocket stuff
+
+
+@socketio.on('message_from_main')
+def handle_message_from_main(data):
+    # print('Received message from main:', data)
+    # Forward the message to the admin page
+    socketio.emit(json.loads(data)['data']['type'], data)
+
+
+# endregion
+
 
 def startflaskserver():
-    flaskapp.run(host='0.0.0.0', port=5000)
+    socketio.run(app=flaskapp, host='0.0.0.0', port=5000)
 
 
 # endregion

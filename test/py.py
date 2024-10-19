@@ -1,17 +1,19 @@
-from flask import Flask, request
-from flask_cors import CORS
-import matplotlib.pyplot as plt
-import io
-import numpy as np
-from scipy.signal import butter, filtfilt  # For filtering
-import uuid
+from flask import Flask
+from flask_socketio import SocketIO
 
 app = Flask(__name__)
-CORS(app)
-
-# Define a simple low-pass Butterworth filter
+socketio = SocketIO(app)
 
 
+@app.route('/')
+def index():
+    return "Socket.IO server is running"
 
-if __name__ == "__main__":
-    app.run()
+
+@socketio.on('message_from_main')
+def handle_message(data):
+    print('Received data:', data)
+
+
+if __name__ == '__main__':
+    socketio.run(app)

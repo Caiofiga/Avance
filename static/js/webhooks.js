@@ -49,12 +49,22 @@ worker.onmessage = function(event) {
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
         handleMovement(displacement.dx);  // Trigger the movement in the game logic
+        let admindata = JSON.stringify(
+          { data:{
+              type: "movement",
+              displacement: displacement
+          }
+          }
+      )
+        sendData(admindata);  // this is a shitty solution
     } else if (event.data.type === 'connection') {
         console.log(`[Connection Status] ${event.data.status}`, event.data.reason || '');
     } else if (event.data.type === 'error') {
         console.error('[Worker Error]', event.data.message);
     }
 };
+
+
 
 // Function to send messages to the server through the worker
 function sendToServer(message) {
@@ -101,8 +111,8 @@ export const permabuffer = [];
   `;
   
   // Create a blob URL from the worker code
-  const workerBlob = new Blob([workerCode], { type: "application/javascript" });
-  const workerUrl = URL.createObjectURL(workerBlob);
+  const sensorWorkerBlob = new Blob([workerCode], { type: "application/javascript" });
+  const workerUrl = URL.createObjectURL(sensorWorkerBlob);
   
   // Create the worker
   const sensorWorker = new Worker(workerUrl);
@@ -120,5 +130,50 @@ export const permabuffer = [];
 
   };
 
+
+//endregion
+
+//region admin-data worker
+
+// Create the Web Worker using a Blob
+
+const adminWorkerBlob = new Blob([`
+importScripts('https://cdn.socket.io/4.8.0/socket.io.min.js');
+let socket;
+self.onmessage = function(event) {
+  if (event.data.type === 'openWebSocket') {
+    const { url } = event.data.payload;
+    socket = io.connect(url); // Use the full URL here
+  } else if (event.data.type === 'sendData' && socket) {
+    socket.emit('message_from_main', event.data.payload.dataBatch);
+    self.postMessage('Data sent to the server');
+  }
+};
+
+
+`], { type: 'application/javascript' });
+
+
+
+
+const adminWorker = new Worker(URL.createObjectURL(adminWorkerBlob));
+
+// Function to open the WebSocket by sending a message to the Web Worker
+function openWebSocket(url) {
+  adminWorker.postMessage({ type: 'openWebSocket', payload: { url: url } });
+}
+
+// Function to send a batch of data through the Web Worker
+export function sendData(dataBatch) {
+    adminWorker.postMessage({ type: 'sendData', payload: { dataBatch: dataBatch } });
+}
+
+// Listen for messages from the Web adminWorker
+adminWorker.onmessage = function(event) {
+    console.log(event.data);
+};
+
+// Example usage:
+openWebSocket('ws://localhost:5000');  // Replace with your WebSocket URL
 
 //endregion

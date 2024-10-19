@@ -1,4 +1,5 @@
-import { permabuffer } from './webhooks.js';
+import { permabuffer, sendData } from './webhooks.js';
+
 function moveDiv(value){    
     let div = document.getElementById("movable");
      let plant1pos = document.getElementById("plant1").getBoundingClientRect();
@@ -71,6 +72,18 @@ function moveDiv(value){
              plant.src = window.static_folder[0.0];
              plant.dataset.completed = "true";
             overlaptimes[plant.id].push(time + ' end')
+
+            let plantIdNumber = plant.id.match(/\d+/)[0]; // Extract the number from the plant id
+            let data = JSON.stringify(
+                { data:{
+                    type: "plant",
+                    plant: plantIdNumber,
+                    status: "completed",
+                    time: time
+                }
+                }
+            )
+            sendData(data)
          }
      }
      let check = 0;
