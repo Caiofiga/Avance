@@ -73,7 +73,6 @@ gauge.animationSpeed = 32; // set animation speed (32 is default value)
 
 
 function adjustSpeedo(value) {
-  console.log(value);
   gauge.set(value);
 }
 function Shake(){
@@ -140,8 +139,7 @@ worker.onmessage = function(event) {
 
 function processData(data) {
   let id = parseInt(data.plant, 10);
-  console.log(data)
-  console.log(data.plant);
+
   let circles = document.getElementsByClassName('circle');
   circles[id-1].style.backgroundColor = 'green';
 }
