@@ -1,8 +1,7 @@
  // Initialize the Dygraph with empty data
- /*
- Ill use this for my admin page I guess
+
 const g = new Dygraph(
-    document.getElementById("chart"),
+    document.getElementById("chart1"),
     [], // Initial empty dataset
     {
       title: "Real-time Accelerometer Data",
@@ -17,26 +16,24 @@ const g = new Dygraph(
       legend: "always",
     }
   );
-  */
- export const permabuffer = [];
-  let dataBuffer = [];
+let dataBuffer = [];
   
   // Inline web worker creation
-  const workerCode = `
+  const sensorWorkerCode = `
     onmessage = function (e) {
       let starttime = 0;
-      console.log("Worker started and ready to connect");
+      console.log("sensor Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.246.209:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.174.247:8080/sensor/connect?type=android.sensor.accelerometer"
       );
   
       socket.onopen = function (e) {
-        console.log("WebSocket connected in worker");
+        console.log("WebSocket connected in sensor worker");
       };
   
       socket.onerror = function (e) {
-        console.log("WebSocket error in worker:", e);
+        console.log("WebSocket error in sensor worker:", e);
       };
   
       socket.onmessage = function (event) {
@@ -57,13 +54,21 @@ const g = new Dygraph(
   `;
   
   // Create a blob URL from the worker code
-  const workerBlob = new Blob([workerCode], { type: "application/javascript" });
-  const workerUrl = URL.createObjectURL(workerBlob);
+  const sensorWorkerBlob = new Blob([sensorWorkerCode], { type: "application/javascript" });
+  const sensorWorkerUrl = URL.createObjectURL(sensorWorkerBlob);
   
   // Create the worker
-  const sensorWorker = new Worker(workerUrl);
+  const sensorWorker = new Worker(sensorWorkerUrl);
   sensorWorker.postMessage("Start");
   
+
+    // shittyly calculated averages:
+    // { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
+    function is_shaking(x, y, z) {
+      let thresholds = [0.0375, 0.0177, 9.864];
+      return x > thresholds[0] || y > thresholds[1] || z > thresholds[2];
+    }
+
   // Handle messages from the worker
   sensorWorker.onmessage = function (e) {
     let timestamp = e.data.timestamp;
@@ -71,12 +76,34 @@ const g = new Dygraph(
     let y = e.data.y;
     let z = e.data.z;
   
+    if (is_shaking(x, y, z)) {
+      $("#shaking").html("Not Shaking");
+      $("#shaking").removeClass("shaking");
+      $("#shaking").addClass("normal");
+    } else {
+      $("#shaking").html("Shaking");
+      $("#shaking").removeClass("normal");
+      $("#shaking").addClass("shaking");
+    }
+    
+  
     // Append the new data to the buffer (timestamp, x, y, z)
     dataBuffer.push([timestamp, x, y, z]);
-  
+
+
+
+
     // Buffer out old data from IRT graph, but keep it stored in permabuffer
+    averages = null
     if (dataBuffer.length > 100) {
-      permabuffer.push(dataBuffer.shift());
+      averages = find_averages(dataBuffer);
+      dataBuffer.shift();
+    }
+
+    function checkThresholds(averages) {
+      if (averages.x > 10 || averages.y > 10 || averages.z > 10) {
+        alert("Threshold exceeded");
+      }
     }
   
     // Update the Dygraph with the new data
@@ -86,19 +113,7 @@ const g = new Dygraph(
   };
 
 
-  function averages(){
-    permabuffer.forEach((point) => {
-   //each point is a dict of 4 values 
-   //{time, x, y, z}
-      let timeavg = permabuffer.reduce((acc, point) => acc + point[0], 0) / permabuffer.length;
-      let xavg = permabuffer.reduce((acc, point) => acc + point[1], 0) / permabuffer.length;
-      let yavg = permabuffer.reduce((acc, point) => acc + point[2], 0) / permabuffer.length;
-      let zavg = permabuffer.reduce((acc, point) => acc + point[3], 0) / permabuffer.length;
-      console.log({ time: timeavg, x: xavg, y: yavg, z: zavg });
-      return { time: timeavg, x: xavg, y: yavg, z: zavg };
-  });}
   function ExportGraph() {
-
 
     $.ajax({
         type: "POST",
