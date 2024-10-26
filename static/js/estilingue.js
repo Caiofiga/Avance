@@ -1,93 +1,221 @@
-    var Engine = Matter.Engine,
-        Render = Matter.Render,
-        Runner = Matter.Runner,
-        Composites = Matter.Composites,
-        Events = Matter.Events,
-        Constraint = Matter.Constraint,
-        MouseConstraint = Matter.MouseConstraint,
-        Mouse = Matter.Mouse,
-        Body = Matter.Body,
-        Composite = Matter.Composite,
-        Bodies = Matter.Bodies;
+// Get the canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-    // create engine
-    var engine = Engine.create(),
-        world = engine.world;
+// Game variables
+let ball = {
+    x: 150,
+    y: 450,
+    radius: 20,
+    vx: 0,
+    vy: 0,
+    isDragging: false,
+    isLaunched: false
+};
 
-    // create renderer
-    var render = Render.create({
-        element: document.body,
-        engine: engine,
-        options: {
-            width: 800,
-            height: 600,
-            showAngleIndicator: true
-        }
-    });
+let anchor = {
+    x: 150,
+    y: 450
+};
 
-    Render.run(render);
+let isLaunched = false;
+let gravity = 0.5;
+let friction = 0.99;
 
-    // create runner
-    var runner = Runner.create();
-    Runner.run(runner, engine);
+// Event listeners for mouse interaction
+canvas.addEventListener('mousedown', startDrag);
+canvas.addEventListener('mousemove', dragBall);
+canvas.addEventListener('mouseup', releaseBall);
 
-    // add bodies
-    var ground = Bodies.rectangle(395, 600, 815, 50, { isStatic: true, render: { fillStyle: '#060a19' } }),
-        rockOptions = { density: 0.004 },
-        rock = Bodies.polygon(170, 450, 8, 20, rockOptions),
-        anchor = { x: 170, y: 450 },
-        elastic = Constraint.create({ 
-            pointA: anchor, 
-            bodyB: rock, 
-            length: 0.01,
-            damping: 0.01,
-            stiffness: 0.05
-        });
-
-    var pyramid = Composites.pyramid(500, 300, 9, 10, 0, 0, function(x, y) {
-        return Bodies.rectangle(x, y, 25, 40);
-    });
-
-    var ground2 = Bodies.rectangle(610, 250, 200, 20, { isStatic: true, render: { fillStyle: '#060a19' } });
-
-    var pyramid2 = Composites.pyramid(550, 0, 5, 10, 0, 0, function(x, y) {
-        return Bodies.rectangle(x, y, 25, 40);
-    });
-
-    Composite.add(engine.world, [ground, pyramid, ground2, pyramid2, rock, elastic]);
-
-    function moveRock(value){
-        var sliderValue = parseFloat(value);
-        Body.setPosition(rock, { x: sliderValue, y: anchor.y });
+// Functions to handle mouse events
+function startDrag(e) {
+    const mousePos = getMousePos(canvas, e);
+    if (isInsideBall(mousePos, ball) && !ball.isLaunched) {
+        ball.isDragging = true;
+        isLaunched = false;
+        ball.vx = 0;
+        ball.vy = 0;
     }
-    
-    /*
-    use the movement from the contracting motion in the arm to move the arm a small amount dx; dy is FIXED
-    when you launch the ball, adjust the speed of the launch so it always hits the target
-    Rogged
-    */
+}
 
-    Events.on(engine, 'afterUpdate', function() {
-        if (mouseConstraint.mouse.button === -1 && (rock.position.x > 190 || rock.position.y < 430)) {
-            // Limit maximum speed of current rock.
-            if (Body.getSpeed(rock) > 45) {
-                Body.setSpeed(rock, 45);
+function dragBall(x) {
+    if (ball.isDragging && !ball.isLaunched) {
+        console.log('vamo ')
+        ball.x = x;
+    }
+}
+
+function releaseBall(e) {
+    if (ball.isDragging && !ball.isLaunched) {
+        ball.isDragging = false;
+        isLaunched = true;
+        ball.isLaunched = true;
+        // Calculate launch velocity based on pull-back distance
+        ball.vx = (anchor.x - ball.x) * 0.1;
+        ball.vy = (anchor.y - ball.y) * 0.1;
+    }
+}
+
+
+class Obstacle {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    drawctx() {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+
+    broadPhaseCheck(ball) {
+        const distanceThreshold = 100;
+        const dx = ball.x - (this.x + this.width / 2);
+        const dy = ball.y - (this.y + this.height / 2);
+        return Math.sqrt(dx * dx + dy * dy) < distanceThreshold;
+    }
+
+    checkcollision(ball) {
+        if (this.broadPhaseCheck(ball)) {
+            if (
+                ball.x + ball.radius > this.x && 
+                ball.x - ball.radius < this.x + this.width && 
+                ball.y + ball.radius > this.y && 
+                ball.y - ball.radius < this.y + this.height
+            ) {
+                // Simple collision response
+                ball.vx *= -1;
+                ball.vy *= -1;
+
+                // Determine the side of the obstacle where the collision occurred
+                let collisionX, collisionY;
+
+                if (ball.x < this.x) {
+                    // Collision on the left side
+                    collisionX = this.x;
+                    collisionY = ball.y;
+                } else if (ball.x > this.x + this.width) {
+                    // Collision on the right side
+                    collisionX = this.x + this.width;
+                    collisionY = ball.y;
+                } else if (ball.y < this.y) {
+                    // Collision on the top side
+                    collisionX = ball.x;
+                    collisionY = this.y;
+                } else if (ball.y > this.y + this.height) {
+                    // Collision on the bottom side
+                    collisionX = ball.x;
+                    collisionY = this.y + this.height;
+                }
+
+                // Play the collision GIF at the exact collision point
+                obstacles.pop(ball)
+                
+                playCollisionGif(this.x +this.width/2, this.y + this.height/2);
             }
-
-            // Release current rock and add a new one.
-            rock = Bodies.polygon(170, 450, 7, 20, rockOptions);
-            Composite.add(engine.world, rock);
-            elastic.bodyB = rock;
         }
-    });
+    }
+}
 
-    Composite.add(world, mouseConstraint);
+function playCollisionGif(x, y) {
+    const gif = document.getElementById('collisionGif');
 
-    // keep the mouse in sync with rendering
-    render.mouse = mouse;
+    // Reset the src to restart the GIF animation
+    gif.src = gif.src;
 
-    // fit the render viewport to the scene
-    Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 }
-    });
+    // Set the position of the GIF to the collision point
+    gif.style.left = `${x - 50}px`;  // Center the gif horizontally on the collision point
+    gif.style.top = `${y - 50}px`;   // Center the gif vertically on the collision point
+    gif.style.display = 'block';     // Show the gif
+
+    // Hide the gif after 1.5 seconds
+    setTimeout(() => {
+        gif.style.display = 'none';
+    }, 1500);
+}
+
+// Rest of the game logic...
+
+
+let obstacles = [];
+
+function drawObstacles() {
+    for (let obstacle of obstacles) {
+        obstacle.drawctx();
+        obstacle.checkcollision(ball);  // Check collision during each frame
+    }
+}
+
+function addObstacle() {
+    let obstacle = new Obstacle(600, canvas.height - 50, 50, 50);
+    obstacles.push(obstacle);
+}
+addObstacle()
+
+// Utility functions
+function getMousePos(canvas, evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
+
+function isInsideBall(pos, ball) {
+    const dx = pos.x - ball.x;
+    const dy = pos.y - ball.y;
+    return Math.sqrt(dx * dx + dy * dy) < ball.radius;
+}
+
+// Main animation loop
+function animate() {
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw slingshot band
+    if (ball.isDragging || !isLaunched) {
+        ctx.beginPath();
+        ctx.moveTo(anchor.x, anchor.y);
+        ctx.lineTo(ball.x, ball.y);
+        ctx.strokeStyle = 'gray';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // Update ball position if launched
+    if (isLaunched && !ball.isDragging) {
+        ball.vy += gravity; // Apply gravity
+        ball.vx *= friction; // Apply friction
+        ball.vy *= friction;
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        // Collision detection with ground
+        if (ball.y + ball.radius > canvas.height) {
+            ball.y = canvas.height - ball.radius;
+            ball.vy *= -1; // Reverse velocity (bounce)
+        }
+
+        // Collision detection with walls
+        if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+            ball.vx *= -1; // Reverse velocity
+        }
+    }
+
+    let ballImage = new Image()
+    ballImage.src = '../static/img/ball.png'
+    // Draw the ball
+    ctx.drawImage(ballImage, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+
+    // Draw obstacles (for collision detection)
+    drawObstacles();
+
+    // Request the next frame
+    requestAnimationFrame(animate);
+}
+
+
+// Start the animation
+animate();

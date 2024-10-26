@@ -1,4 +1,3 @@
-import { handleMovement } from './testgamelogic.js';
 
 //region Camera Worker
 
@@ -48,7 +47,12 @@ worker.postMessage('Start');
 worker.onmessage = function(event) {
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
+        if (typeof(handleMovement) == 'function'){
         handleMovement(displacement.dx);  // Trigger the movement in the game logic
+        }
+        else if (typeof((dragBall)) == 'function'){
+          dragBall(displacement.dx)
+        }
         let admindata = JSON.stringify(
           { data:{
               type: "movement",
@@ -73,7 +77,7 @@ function sendToServer(message) {
 //endregion
 
 //region Sensor Worker
-export const permabuffer = [];
+const permabuffer = [];
 
   // Inline web worker creation
   const workerCode = `
@@ -164,7 +168,7 @@ function openWebSocket(url) {
 }
 
 // Function to send a batch of data through the Web Worker
-export function sendData(dataBatch) {
+function sendData(dataBatch) {
     adminWorker.postMessage({ type: 'sendData', payload: { dataBatch: dataBatch } });
 }
 
