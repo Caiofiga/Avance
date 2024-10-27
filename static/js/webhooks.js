@@ -51,7 +51,7 @@ worker.onmessage = function(event) {
         handleMovement(displacement.dx);  // Trigger the movement in the game logic
         }
         else if (typeof((dragBall)) == 'function'){
-          dragBall(displacement.dx)
+          dragBall(displacement.angle)
         }
         let admindata = JSON.stringify(
           { data:{
@@ -80,7 +80,7 @@ function sendToServer(message) {
 const permabuffer = [];
 
   // Inline web worker creation
-  const workerCode = `
+  const sensorWorkerCode = `
     onmessage = function (e) {
       let starttime = 0;
       console.log("Worker started and ready to connect");
@@ -115,7 +115,7 @@ const permabuffer = [];
   `;
   
   // Create a blob URL from the worker code
-  const sensorWorkerBlob = new Blob([workerCode], { type: "application/javascript" });
+  const sensorWorkerBlob = new Blob([sensorWorkerCode], { type: "application/javascript" });
   const workerUrl = URL.createObjectURL(sensorWorkerBlob);
   
   // Create the worker

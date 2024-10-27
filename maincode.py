@@ -28,17 +28,46 @@ hands = mp_hands.Hands(
     max_num_hands=1,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5)
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
 
 # Initialize video capture.
 cap = cv2.VideoCapture(0)
 
 
+def calculate_arm_flexion_angle(landmarks, frame_width, frame_height):
+    # Get shoulder, elbow, and wrist landmarks for angle calculation
+    shoulder = np.array([
+        landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].x * frame_width,
+        landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].y * frame_height
+    ])
+    elbow = np.array([
+        landmarks[mp_pose.PoseLandmark.LEFT_ELBOW].x * frame_width,
+        landmarks[mp_pose.PoseLandmark.LEFT_ELBOW].y * frame_height
+    ])
+    wrist = np.array([
+        landmarks[mp_pose.PoseLandmark.LEFT_WRIST].x * frame_width,
+        landmarks[mp_pose.PoseLandmark.LEFT_WRIST].y * frame_height
+    ])
+
+    # Calculate vectors
+    vector1 = shoulder - elbow
+    vector2 = wrist - elbow
+
+    # Calculate angle using the dot product
+    angle = np.arccos(np.dot(vector1, vector2) /
+                      (np.linalg.norm(vector1) * np.linalg.norm(vector2)))
+    angle_degrees = np.degrees(angle)
+
+    return angle_degrees, shoulder, elbow, wrist
+
+
 def process_video():
-    alpha = 0.2  # Smoothing factor for EMA (between 0 and 1)
+    alpha = 0.2  # Smoothing factor for EMA
     smoothed_x, smoothed_y = None, None
-    movement_threshold = 2.0  # Pixels; adjust based on your use case
-    missing_hand_frames = 0  # Counter for frames without detected hand
+    movement_threshold = 2.0
+    missing_hand_frames = 0
 
     while True:
         ret, frame = cap.read()
@@ -47,24 +76,25 @@ def process_video():
 
         # Flip the frame horizontally for a selfie-view display.
         frame = cv2.flip(frame, 1)
-
-        # Get frame dimensions and compute center coordinates
         frame_height, frame_width = frame.shape[:2]
         center_x, center_y = frame_width / 2, frame_height / 2
 
         # Convert the BGR image to RGB.
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Process the image and detect hands.
-        results = hands.process(image)
+        # Process the image for hand tracking
+        hand_results = hands.process(image)
+
+        # Process the image for pose tracking
+        pose_results = pose.process(image)
 
         # Convert back to BGR for OpenCV.
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        if results.multi_hand_landmarks:
-            missing_hand_frames = 0  # Reset counter
-            for hand_landmarks in results.multi_hand_landmarks:
-                # Get coordinates of the wrist landmark (landmark 0).
+        if hand_results.multi_hand_landmarks and pose_results.pose_landmarks:
+
+            missing_hand_frames = 0
+            for hand_landmarks in hand_results.multi_hand_landmarks:
                 x = hand_landmarks.landmark[0].x * frame_width
                 y = hand_landmarks.landmark[0].y * frame_height
 
@@ -80,38 +110,46 @@ def process_video():
                 delta_x = smoothed_x - center_x
                 delta_y = smoothed_y - center_y
 
+                angle, shoulder, elbow, wrist = calculate_arm_flexion_angle(
+                    pose_results.pose_landmarks.landmark, frame_width, frame_height)
+
+                displacement = {'dx': delta_x, 'dy': delta_y, 'angle': angle}
+                displacement_queue.put(displacement)
+
                 # Apply movement threshold
                 if abs(delta_x) < movement_threshold:
                     delta_x = 0
                 if abs(delta_y) < movement_threshold:
                     delta_y = 0
 
-                displacement = {'dx': delta_x, 'dy': delta_y}
-                # Put displacement data into the queue
-                displacement_queue.put(displacement)
-                # For visualization purposes.
+                # Draw lines connecting shoulder to elbow and elbow to wrist
+                cv2.line(image, tuple(shoulder.astype(int)),
+                         tuple(elbow.astype(int)), (0, 255, 0), 3)
+                cv2.line(image, tuple(elbow.astype(int)),
+                         tuple(wrist.astype(int)), (0, 255, 0), 3)
+
+                # Display the calculated angle at the elbow position
+                cv2.putText(image, f"{angle:.2f} degrees", (int(elbow[0]) + 20, int(elbow[1]) - 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
                 cv2.putText(image, f"dx: {delta_x:.2f}, dy: {delta_y:.2f}", (10, 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-                # Draw the hand landmarks on the image.
                 mp_drawing.draw_landmarks(
                     image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
         else:
             missing_hand_frames += 1
-            # Reset smoothed positions after a certain number of frames without detection
             if missing_hand_frames > 10:
                 smoothed_x, smoothed_y = None, None
 
-        # Optional: Draw the cente he image for reference
+        # Draw center point on the image
         cv2.circle(image, (int(center_x), int(center_y)), 5, (0, 255, 0), -1)
 
         # Display the resulting image.
-        cv2.imshow('Hand Tracking', image)
+        cv2.imshow('Hand and Pose Tracking', image)
 
         # Exit if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
-        # No need to sleep; this function runs in a separate thread
 
 # endregion
 

@@ -23,9 +23,7 @@ let gravity = 0.5;
 let friction = 0.99;
 
 // Event listeners for mouse interaction
-canvas.addEventListener('mousedown', startDrag);
-canvas.addEventListener('mousemove', dragBall);
-canvas.addEventListener('mouseup', releaseBall);
+canvas.addEventListener('mousedown', releaseBall);
 
 // Functions to handle mouse events
 function startDrag(e) {
@@ -39,14 +37,13 @@ function startDrag(e) {
 }
 
 function dragBall(x) {
-    if (ball.isDragging && !ball.isLaunched) {
-        console.log('vamo ')
-        ball.x = x;
+    if (!ball.isLaunched) {
+        ball.x = ball.x +x/100;
     }
 }
 
 function releaseBall(e) {
-    if (ball.isDragging && !ball.isLaunched) {
+    if (!ball.isLaunched) {
         ball.isDragging = false;
         isLaunched = true;
         ball.isLaunched = true;
