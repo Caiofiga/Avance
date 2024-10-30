@@ -24,6 +24,8 @@ let friction = 0.99;
 
 // Event listeners for mouse interaction
 canvas.addEventListener('mousedown', releaseBall);
+//canvas.addEventListener('mousemove', dragBall)
+//canvas.addEventListener('mouseup', releaseBall)
 
 // Functions to handle mouse events
 function startDrag(e) {
@@ -36,11 +38,22 @@ function startDrag(e) {
     }
 }
 
+const angle = Math.PI/4
+const max_distx = 50
+const max_disty = Math.tan(angle) * max_distx
+max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
+
 function dragBall(x) {
-    if (!ball.isLaunched) {
-        ball.x = ball.x +x/100;
+    let dist_x = Math.abs(ball.x) - anchor.x;
+    let dist_y = Math.abs(ball.y) - anchor.y;
+    let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)
+    console.log([dist, max_dist])
+    if (!ball.isLaunched && dist <= max_dist) {
+        ball.x += x * max_distx
+        ball.y += -Math.tan(angle) * x * max_disty
     }
 }
+
 
 function releaseBall(e) {
     if (!ball.isLaunched) {

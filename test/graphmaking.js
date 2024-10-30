@@ -25,7 +25,7 @@ let dataBuffer = [];
       console.log("sensor Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.174.247:8080/sensor/connect?type=android.sensor.accelerometer"
+        "ws://192.168.221.21:8765/"
       );
   
       socket.onopen = function (e) {
@@ -37,6 +37,7 @@ let dataBuffer = [];
       };
   
       socket.onmessage = function (event) {
+      console.log(event)
         let message = JSON.parse(event.data);
         let data = message.values; // [x, y, z] values
         let timestamp = message.timestamp;

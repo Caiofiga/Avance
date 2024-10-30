@@ -68,7 +68,6 @@ def process_video():
     smoothed_x, smoothed_y = None, None
     movement_threshold = 2.0
     missing_hand_frames = 0
-
     while True:
         ret, frame = cap.read()
         if not ret:

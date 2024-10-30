@@ -38,6 +38,7 @@ for (i = 0; i < coll.length; i++) {
   });
 }
 
+
 let green_counter = 0
 function TurnGreen() {
     let circles = document.getElementsByClassName('circle');

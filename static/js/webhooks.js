@@ -51,7 +51,8 @@ worker.onmessage = function(event) {
         handleMovement(displacement.dx);  // Trigger the movement in the game logic
         }
         else if (typeof((dragBall)) == 'function'){
-          dragBall(displacement.angle)
+          percent_moved = (displacement.angle - 30)/150
+          dragBall(percent_moved)
         }
         let admindata = JSON.stringify(
           { data:{
