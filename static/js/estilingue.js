@@ -41,9 +41,9 @@ function startDrag(e) {
 const angle = Math.PI/4
 const max_distx = 50
 const max_disty = Math.tan(angle) * max_distx
-max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
+const max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
 
-function dragBall(x) {
+export function dragBall(x) {
     let dist_x = Math.abs(ball.x) - anchor.x;
     let dist_y = Math.abs(ball.y) - anchor.y;
     let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)

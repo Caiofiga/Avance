@@ -1,5 +1,4 @@
-def trouxa():
-    return 'trouxa'
+y = 0
+def functio():
+    global y
 
-
-tr = trouxa()

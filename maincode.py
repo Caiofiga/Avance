@@ -392,13 +392,11 @@ flaskapp.secret_key = secrets.token_urlsafe(16)
 # region website serving
 @flaskapp.route('/')
 def index():
-
-    # this gets a reference to the running bokeh session
-    # session = pull_session(url='http://localhost:5006/')
-    # this generates the script to use in my flask page
-    # script = server_session(session_id=session.id,
-    #                        url='http://localhost:5006/')
     return render_template('testgame.html', bokeh_script=0)
+
+@flaskapp.route('/estilingue')
+def estilingue():
+    return render_template('estilingue.html', bokeh_script=0)
 
 
 @flaskapp.route('/save_score', methods=['POST'])
@@ -470,3 +468,10 @@ if __name__ == "__main__":
     finally:
         cap.release()
         cv2.destroyAllWindows()
+
+
+
+
+
+
+

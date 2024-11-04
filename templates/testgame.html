@@ -24,7 +24,7 @@
       crossorigin="anonymous"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
-  <body style="background-image: url({{ url_for('static', filename='img/bg.svg') }})">
+  <body style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')">
     <div>{{bokeh_scripts|safe}}</div>
     <div id="plot"></div>
     <!-- Reference the image from Flask's static folder -->
@@ -85,10 +85,8 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
-
     <!-- Reference the JS files from Flask's static folder -->
-    <script type="module" src="{{ url_for('static', filename='js/graphmaking.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/testgamelogic.js') }}"></script>
+     <script type="module" src=" {{ url_for('static', filename='js/testgamelogic.js')}}"></script>
     <script type="module" src="{{ url_for('static', filename='js/webhooks.js') }}"></script>
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"

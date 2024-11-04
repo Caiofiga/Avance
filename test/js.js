@@ -89,7 +89,7 @@ function Shake(){
     elem.innerHTML = "Shaking";
   }
 }
-// Creating the Web Worker
+// Creating the Web Worker for the gauge and other data
 const workerBlob = new Blob([`
   importScripts('https://cdn.socket.io/4.8.0/socket.io.min.js');
   let socket;
@@ -98,7 +98,7 @@ const workerBlob = new Blob([`
     if (event.data.type === 'openWebSocket') {
       const { url } = event.data.payload;
       socket = io.connect(url);
-      console.log('WebSocket connection opened:', url);
+      console.log(' Que porra eh essWebSocket connection opened:', url);
 
       // Handle messages from the server
       socket.on('plant', (data) => {

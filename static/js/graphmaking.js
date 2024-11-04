@@ -25,7 +25,7 @@ let dataBuffer = [];
       console.log("sensor Worker started and ready to connect");
   
       const socket = new WebSocket(
-        "ws://192.168.221.21:8765/"
+        "ws://192.168.68.21:8765/"
       );
   
       socket.onopen = function (e) {
@@ -37,9 +37,8 @@ let dataBuffer = [];
       };
   
       socket.onmessage = function (event) {
-      console.log(event)
         let message = JSON.parse(event.data);
-        let data = message.values; // [x, y, z] values
+        let data = message.accel; // [x, y, z] values
         let timestamp = message.timestamp;
   
         if (starttime === 0) {
@@ -47,7 +46,7 @@ let dataBuffer = [];
         }
   
         // Calculate elapsed time in seconds
-        let elapsedTime = (timestamp - starttime) / 1000000000;
+        let elapsedTime = timestamp
         let workerresponse = { timestamp: elapsedTime, x: data[0], y: data[1], z: data[2] };
         postMessage(workerresponse);
       };
@@ -78,26 +77,23 @@ let dataBuffer = [];
     let z = e.data.z;
   
     if (is_shaking(x, y, z)) {
-      $("#shaking").html("Not Shaking");
-      $("#shaking").removeClass("shaking");
-      $("#shaking").addClass("normal");
-    } else {
       $("#shaking").html("Shaking");
       $("#shaking").removeClass("normal");
       $("#shaking").addClass("shaking");
+
+    } else {
+      $("#shaking").html("Not Shaking");
+      $("#shaking").removeClass("shaking");
+      $("#shaking").addClass("normal");
     }
     
-  
     // Append the new data to the buffer (timestamp, x, y, z)
     dataBuffer.push([timestamp, x, y, z]);
-
-
-
 
     // Buffer out old data from IRT graph, but keep it stored in permabuffer
     averages = null
     if (dataBuffer.length > 100) {
-      averages = find_averages(dataBuffer);
+
       dataBuffer.shift();
     }
 

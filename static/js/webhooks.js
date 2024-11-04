@@ -1,6 +1,21 @@
+async function loadGameLogic(gameType) {
+  let gameLogic = {};
+  if (gameType === 'slingshot') {
+      const module = await import('./estilingue.js');
+      gameLogic = module.dragBall;
+  } else if (gameType === 'otherGame') {
+      const module = await import('./testgamelogic.js');
+      gameLogic = module.handleMovement; 
+  } else {
+      gameLogic = null;
+  }
+  return gameLogic;
+}
+
+const currentGameType = 'slingshot'; // Replace with your logic to determine game type
+const gameLogic = await loadGameLogic(currentGameType);
 
 //region Camera Worker
-
 const CameraworkerCode = `
     self.onmessage = function(event) {
         const socket = new WebSocket('ws://localhost:6789');
@@ -43,17 +58,23 @@ const CameraworkerCode = `
 const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage('Start');
-
 worker.onmessage = function(event) {
+  console.log(gameLogic)
+  console.log(typeof(gameLogic))
+
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
-        if (typeof(handleMovement) == 'function'){
-        handleMovement(displacement.dx);  // Trigger the movement in the game logic
+        if (gameLogic && typeof gameLogic === 'function') {
+          // Trigger handleMovement if it exists in the game logic
+          gameLogic(displacement.dx);
+        } else if (gameLogic && typeof gameLogic === 'function') {
+          // Calculate the percent moved based on the angle, then call dragBall
+          let percentMoved = (displacement.angle - 30) / 150;
+          gameLogic(percentMoved);
+        } else {
+          console.log("No valid function found in gameLogic for this action.");
         }
-        else if (typeof((dragBall)) == 'function'){
-          percent_moved = (displacement.angle - 30)/150
-          dragBall(percent_moved)
-        }
+        
         let admindata = JSON.stringify(
           { data:{
               type: "movement",
@@ -78,7 +99,7 @@ function sendToServer(message) {
 //endregion
 
 //region Sensor Worker
-const permabuffer = [];
+export const permabuffer = [];
 
   // Inline web worker creation
   const sensorWorkerCode = `
@@ -169,7 +190,7 @@ function openWebSocket(url) {
 }
 
 // Function to send a batch of data through the Web Worker
-function sendData(dataBatch) {
+export function sendData(dataBatch) {
     adminWorker.postMessage({ type: 'sendData', payload: { dataBatch: dataBatch } });
 }
 
