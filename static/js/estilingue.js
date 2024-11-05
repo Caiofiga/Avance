@@ -29,18 +29,17 @@ canvas.addEventListener('mousedown', releaseBall);
 
 
 const angle = Math.PI/4
-const max_distx = 50
+const max_distx = 100
 const max_disty = Math.tan(angle) * max_distx
 const max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
 
-export function dragBall(x) {
-    console.log([x, max_dist])
+export function dragBall(x ) {
     let dist_x = Math.abs(ball.x) - anchor.x;
     let dist_y = Math.abs(ball.y) - anchor.y;
     let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)
     if (!ball.isLaunched && dist <= max_dist) {
-        ball.x += x * max_distx/100
-        ball.y += -Math.tan(angle) * x * max_disty/100
+        ball.x += -x * max_distx
+        ball.y += Math.tan(angle) * x * max_disty
     }
 }
 

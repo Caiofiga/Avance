@@ -128,7 +128,7 @@ def process_video():
                          tuple(wrist.astype(int)), (0, 255, 0), 3)
 
                 # Display the calculated angle at the elbow position
-                cv2.putText(image, f"{angle:.2f} degrees", (10,50),
+                cv2.putText(image, f"{angle:.2f} degrees", (10, 50),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
                 cv2.putText(image, f"dx: {delta_x:.2f}, dy: {delta_y:.2f}", (10, 30),
@@ -394,6 +394,7 @@ flaskapp.secret_key = secrets.token_urlsafe(16)
 def index():
     return render_template('testgame.html')
 
+
 @flaskapp.route('/estilingue')
 def estilingue():
     return render_template('estilingue.html')
@@ -468,10 +469,3 @@ if __name__ == "__main__":
     finally:
         cap.release()
         cv2.destroyAllWindows()
-
-
-
-
-
-
-

@@ -54,21 +54,23 @@ const CameraworkerCode = `
     };
 `;
 
+
 // Create a blob URL for the worker
 const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage('Start');
 worker.onmessage = function(event) {
-
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
-        if (gameLogic && typeof gameLogic === 'function') {
+
+        if (gameLogic && typeof gameLogic === 'function' && gameLogic.name === 'handleMovement') {
           // Trigger handleMovement if it exists in the game logic
           gameLogic(displacement.dx);
-        } else if (gameLogic && typeof gameLogic === 'function') {
+        } else if (gameLogic && typeof gameLogic === 'function' && gameLogic.name === 'dragBall') { //I'm an idiot.
           // Calculate the percent moved based on the angle, then call dragBall
-          let percentMoved = (displacement.angle - 30) / 180;
-          console.log([displacement.angle, percentMoved])
+          //now I need to calculate an angle deadzone. Super fun!
+          let percentMoved = displacement.angle/180 
+
           gameLogic(percentMoved);
         } else {
           console.log("No valid function found in gameLogic for this action.");
@@ -193,7 +195,6 @@ export function sendData(dataBatch) {
 
 // Listen for messages from the Web adminWorker
 adminWorker.onmessage = function(event) {
-    console.log(event.data);
 };
 
 // Example usage:
