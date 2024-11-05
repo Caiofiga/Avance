@@ -25,7 +25,6 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
   <body style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')">
-    <div>{{bokeh_scripts|safe}}</div>
     <div id="plot"></div>
     <!-- Reference the image from Flask's static folder -->
     <img id="movable" src="{{ url_for('static', filename='img/can.png') }}" />

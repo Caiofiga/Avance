@@ -59,8 +59,6 @@ const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage('Start');
 worker.onmessage = function(event) {
-  console.log(gameLogic)
-  console.log(typeof(gameLogic))
 
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
@@ -69,7 +67,8 @@ worker.onmessage = function(event) {
           gameLogic(displacement.dx);
         } else if (gameLogic && typeof gameLogic === 'function') {
           // Calculate the percent moved based on the angle, then call dragBall
-          let percentMoved = (displacement.angle - 30) / 150;
+          let percentMoved = (displacement.angle - 30) / 180;
+          console.log([displacement.angle, percentMoved])
           gameLogic(percentMoved);
         } else {
           console.log("No valid function found in gameLogic for this action.");
@@ -89,8 +88,6 @@ worker.onmessage = function(event) {
         console.error('[Worker Error]', event.data.message);
     }
 };
-
-
 
 // Function to send messages to the server through the worker
 function sendToServer(message) {
