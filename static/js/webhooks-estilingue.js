@@ -38,7 +38,7 @@ const CameraworkerCode = `
     };
 `;
 
-
+let lastangle = 0;
 // Create a blob URL for the worker
 const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
@@ -46,8 +46,11 @@ worker.postMessage('Start');
 worker.onmessage = function(event) {
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
-        let percentMoved = displacement.angle/180 
+        if (Math.abs(displacement.angle - lastangle) > 5) {
+        let percentMoved = (displacement.angle - lastangle)/180 
+        lastangle = displacement.angle;
         dragBall(percentMoved);
+        }
         let admindata = JSON.stringify(
           { data:{
               type: "movement",

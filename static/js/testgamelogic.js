@@ -1,10 +1,11 @@
 import { permabuffer, sendData } from './webhooks-regador.js';
 
 function moveDiv(value){    
+    let sensitivity = 0.4;
     let div = document.getElementById("movable");
      let plant1pos = document.getElementById("plant1").getBoundingClientRect();
      let plant5pos = document.getElementById("plant5").getBoundingClientRect();
-     let x =  (plant1pos.left + plant5pos.right)/2 + (plant5pos.right + 40) * value / 100;
+     let x =  (plant1pos.left + plant5pos.right)/2 + (plant5pos.right + 40) * value * sensitivity / 100;
      div.style.left = x + "px";
  }
  
