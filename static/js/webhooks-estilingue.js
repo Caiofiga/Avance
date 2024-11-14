@@ -66,10 +66,6 @@ worker.onmessage = function(event) {
     }
 };
 
-// Function to send messages to the server through the worker
-function sendToServer(message) {
-    worker.postMessage({ type: 'sendMessage', message: message });
-}
 //endregion
 
 //region Sensor Worker

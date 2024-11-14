@@ -13,20 +13,23 @@ let ball = {
     isLaunched: false
 };
 
-let anchor = {
-    x: 150,
-    y: 450
-};
+let anchors = [
+    { x: 150, y: 450 },
+    { x: 300, y: 450 },
+    { x: 450, y: 450 }
+];
 
+let level = 0;
+let anchor = anchors[level];
 let isLaunched = false;
 let gravity = 0.5;
 let friction = 0.99;
+
 
 // Event listeners for mouse interaction
 canvas.addEventListener('mousedown', releaseBall);
 //canvas.addEventListener('mousemove', dragBall)
 //canvas.addEventListener('mouseup', releaseBall)
-
 
 const angle = Math.PI/4
 const max_distx = 100
@@ -42,7 +45,6 @@ export function dragBall(x ) {
         ball.y += Math.tan(angle) * x * max_disty
     }
 }
-
 
 function releaseBall(e) {
     if (!ball.isLaunched) {
@@ -132,10 +134,28 @@ function playCollisionGif(x, y) {
     // Hide the gif after 1.5 seconds
     setTimeout(() => {
         gif.style.display = 'none';
+        handleNextLevel();
     }, 1500);
 }
 
-// Rest of the game logic...
+function handleNextLevel(){
+level ++;
+if (level >= anchors.length) {
+    level = 0;
+}
+anchor = anchors[level];
+ball = {
+    x: 150,
+    y: 450,
+    radius: 20,
+    vx: 0,
+    vy: 0,
+    isDragging: false,
+    isLaunched: false
+};
+addObstacle(700,300,50,50);
+
+}
 
 
 let obstacles = [];
@@ -147,26 +167,12 @@ function drawObstacles() {
     }
 }
 
-function addObstacle() {
-    let obstacle = new Obstacle(600, canvas.height - 50, 50, 50);
+function addObstacle(x,y,w,h) {
+    let obstacle = new Obstacle(x, canvas.height - y, w, h);
     obstacles.push(obstacle);
 }
-addObstacle()
+addObstacle(600,50,50,50)
 
-// Utility functions
-function getMousePos(canvas, evt) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
-    };
-}
-
-function isInsideBall(pos, ball) {
-    const dx = pos.x - ball.x;
-    const dy = pos.y - ball.y;
-    return Math.sqrt(dx * dx + dy * dy) < ball.radius;
-}
 
 // Main animation loop
 function animate() {
