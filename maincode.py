@@ -163,7 +163,7 @@ connected_clients = set()
 displacement_queue = Queue()
 
 
-async def handler(websocket, path):
+async def handler(websocket):
     # Register client
     connected_clients.add(websocket)
     print(f"Client connected: {websocket.remote_address}")
@@ -189,6 +189,7 @@ async def broadcaster():
             continue
         else:
             if connected_clients:
+                print(connected_clients)
                 message = json.dumps(displacement)
 
                 await asyncio.gather(*(client.send(message) for client in connected_clients))
@@ -388,8 +389,9 @@ cors = CORS(flaskapp)
 socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
-
 # region website serving
+
+
 @flaskapp.route('/')
 def index():
     return render_template('testgame.html')

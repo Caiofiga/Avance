@@ -1,20 +1,4 @@
-async function loadGameLogic(gameType) {
-  let gameLogic = {};
-  if (gameType === 'slingshot') {
-      const module = await import('./estilingue.js');
-      gameLogic = module.dragBall;
-  } else if (gameType === 'otherGame') {
-      const module = await import('./testgamelogic.js');
-      gameLogic = module.handleMovement; 
-  } else {
-      gameLogic = null;
-  }
-  return gameLogic;
-}
-
-const currentGameType = 'slingshot'; // Replace with your logic to determine game type
-const gameLogic = await loadGameLogic(currentGameType);
-
+import {dragBall} from "./estilingue.js"
 //region Camera Worker
 const CameraworkerCode = `
     self.onmessage = function(event) {
@@ -62,20 +46,8 @@ worker.postMessage('Start');
 worker.onmessage = function(event) {
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
-
-        if (gameLogic && typeof gameLogic === 'function' && gameLogic.name === 'handleMovement') {
-          // Trigger handleMovement if it exists in the game logic
-          gameLogic(displacement.dx);
-        } else if (gameLogic && typeof gameLogic === 'function' && gameLogic.name === 'dragBall') { //I'm an idiot.
-          // Calculate the percent moved based on the angle, then call dragBall
-          //now I need to calculate an angle deadzone. Super fun!
-          let percentMoved = displacement.angle/180 
-
-          gameLogic(percentMoved);
-        } else {
-          console.log("No valid function found in gameLogic for this action.");
-        }
-        
+        let percentMoved = displacement.angle/180 
+        dragBall(percentMoved);
         let admindata = JSON.stringify(
           { data:{
               type: "movement",

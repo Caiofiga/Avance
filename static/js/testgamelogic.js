@@ -1,4 +1,4 @@
-import { permabuffer, sendData } from './webhooks.js';
+import { permabuffer, sendData } from './webhooks-regador.js';
 
 function moveDiv(value){    
     let div = document.getElementById("movable");
