@@ -189,7 +189,6 @@ async def broadcaster():
             continue
         else:
             if connected_clients:
-                print(connected_clients)
                 message = json.dumps(displacement)
 
                 await asyncio.gather(*(client.send(message) for client in connected_clients))

@@ -39,6 +39,10 @@ const CameraworkerCode = `
 `;
 
 let lastangle = 0;
+
+export function resetLastAngle(){
+  lastangle = 0;
+}
 // Create a blob URL for the worker
 const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));

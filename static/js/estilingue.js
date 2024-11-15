@@ -1,4 +1,12 @@
-// Get the canvas and context
+//Dinamica de projeteis eh uma bosta, e o cara que inventou isso devia ser preso.
+
+// Dynamically import the module after the current module is loaded
+let resetLastAngle;
+(async () => {
+    resetLastAngle = (await import("./webhooks-estilingue.js")).resetLastAngle;
+})();
+  
+  // Get the canvas and context
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -19,24 +27,37 @@ let anchors = [
     { x: 450, y: 450 }
 ];
 
+let distances = [100,125,50]; // Set distance away from the anchors at a 45 degree angle
+const angle = Math.PI/4
+
+let objectives = anchors.map((anchor, index) => ({
+    x: anchor.x - distances[index] * Math.cos(Math.PI / 4),
+    y: anchor.y + distances[index] * Math.sin(Math.PI / 4)
+}));
+
+
 let level = 0;
+
+let obj_marker = {
+    x: objectives[level].x,
+    y: objectives[level].y,
+    radius: 10
+}
+
+
+
 let anchor = anchors[level];
 let isLaunched = false;
-let gravity = 0.5;
-let friction = 0.99;
 
-
-// Event listeners for mouse interaction
-canvas.addEventListener('mousedown', releaseBall);
-//canvas.addEventListener('mousemove', dragBall)
-//canvas.addEventListener('mouseup', releaseBall)
-
-const angle = Math.PI/4
 const max_distx = 100
 const max_disty = Math.tan(angle) * max_distx
 const max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
 
 export function dragBall(x ) {
+     if (x < 0){
+        console.warn("Warning: x is negative, getting the absolute value");
+        x = Math.abs(x);
+     }
     let dist_x = Math.abs(ball.x) - anchor.x;
     let dist_y = Math.abs(ball.y) - anchor.y;
     let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)
@@ -46,15 +67,32 @@ export function dragBall(x ) {
     }
 }
 
+let parabola = null;
+let launchtime = 0;
 function releaseBall(e) {
     if (!ball.isLaunched) {
         ball.isDragging = false;
         isLaunched = true;
         ball.isLaunched = true;
         // Calculate launch velocity based on pull-back distance
-        ball.vx = (anchor.x - ball.x) * 0.1;
-        ball.vy = (anchor.y - ball.y) * 0.1;
+        parabola = calculateParabolicArc(ball.x, ball.y, anchor.x, anchor.y, obstacles[0].x, obstacles[0].y);
+        launchtime = performance.now();
     }
+}
+
+// Function to calculate the parabolic path
+function calculateParabolicArc(startX, startY, anchorX, anchorY, endX, endY) {
+    // Calculate the midpoint between the start, anchor, and end points
+    let midX = anchorX;
+    let midY = anchorY; // Make sure the anchor point is the vertex of the parabola
+
+    // Now we need to ensure the parabola passes through the start, anchor, and end points
+    return function(t) {
+        // t is between 0 and 1
+        let x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * midX + t * t * endX;
+        let y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * midY + t * t * endY;
+        return { x, y };
+    };
 }
 
 
@@ -139,21 +177,33 @@ function playCollisionGif(x, y) {
 }
 
 function handleNextLevel(){
-level ++;
-if (level >= anchors.length) {
-    level = 0;
-}
-anchor = anchors[level];
-ball = {
-    x: 150,
-    y: 450,
-    radius: 20,
-    vx: 0,
-    vy: 0,
-    isDragging: false,
-    isLaunched: false
-};
-addObstacle(700,300,50,50);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    level ++;
+    isLaunched = false;
+    if (level >= anchors.length) {
+        level = 0;
+    }
+    anchor = anchors[level];
+    ball = {
+        x: anchor.x,
+        y: anchor.y,
+        radius: 20,
+        vx: 0,
+        vy: 0,
+        isDragging: false,
+        isLaunched: false
+    };
+    obj_marker = {
+        x: objectives[level].x,
+        y: objectives[level].y,
+        radius: 10
+    }
+    obj_timer = 3.0;
+    
+    addObstacle(700,300,50,50);
+    parabola = null;
+    launchtime = null;
+    flighttime = 0;
 
 }
 
@@ -173,9 +223,24 @@ function addObstacle(x,y,w,h) {
 }
 addObstacle(600,50,50,50)
 
+function isBallInObjective(ball, obj_marker) {
+    const dx = ball.x - obj_marker.x;
+    const dy = ball.y - obj_marker.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance <= ball.radius + obj_marker.radius;
+}
 
-// Main animation loop
+let obj_timer = 3.0;
+
+let lastframetime = performance.now()
+let totalframetime = 0;
+let flighttime = 0
+let parabolatime = 4000;
+//preciso somar os frametimes ate dar 1/60, ai eu rodo a fisica
 function animate() {
+    let deltaTime = performance.now() - lastframetime;
+    lastframetime = performance.now(); // Update the last frame time
+
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -189,38 +254,61 @@ function animate() {
         ctx.stroke();
     }
 
-    // Update ball position if launched
-    if (isLaunched && !ball.isDragging) {
-        ball.vy += gravity; // Apply gravity
-        ball.vx *= friction; // Apply friction
-        ball.vy *= friction;
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-
-        // Collision detection with ground
-        if (ball.y + ball.radius > canvas.height) {
-            ball.y = canvas.height - ball.radius;
-            ball.vy *= -1; // Reverse velocity (bounce)
-        }
-
-        // Collision detection with walls
-        if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
-            ball.vx *= -1; // Reverse velocity
-        }
+    // Accumulate frame time and update physics at 60 FPS
+    totalframetime += deltaTime;
+    while (totalframetime >= (1000 / 60)) { // Update physics if enough time has passed
+        updatePhysics();
+        totalframetime -= (1000 / 60); // Decrease the accumulated time by the amount needed for the next physics update
     }
 
-    let ballImage = new Image()
-    ballImage.src = '../static/img/ball.png'
+
+    let ballImage = new Image();
+    ballImage.src = '../static/img/ball.png';
     // Draw the ball
     ctx.drawImage(ballImage, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+    // Draw the objective marker
+    ctx.beginPath();
+    ctx.arc(obj_marker.x, obj_marker.y, obj_marker.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Draw obstacles (for collision detection)
     drawObstacles();
 
+    if (isBallInObjective(ball, obj_marker)) {
+        obj_timer -= 0.01
+        console.log("counting Down!")
+        if (obj_timer <= 0) {
+            resetLastAngle();
+            releaseBall();
+        }
+    }
     // Request the next frame
     requestAnimationFrame(animate);
 }
 
+//essa funcao soh vai rodar a cada 1/60 segs
+function updatePhysics(){
+
+    if (isLaunched && parabola != null){
+        flighttime += (performance.now() - launchtime)
+        let t = flighttime/parabolatime;
+        ball.x = parabola(t).x
+        ball.y = parabola(t).y
+    }
+
+    // Collision detection with ground
+    if (ball.y + ball.radius > canvas.height) {
+        ball.y = canvas.height - ball.radius;
+        ball.vy *= -1; // Reverse velocity (bounce)
+    }
+
+    // Collision detection with walls
+    if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+        ball.vx *= -1; // Reverse velocity
+    }
+}
 
 // Start the animation
 animate();
