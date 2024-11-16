@@ -10,22 +10,29 @@ let resetLastAngle;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+
+let level = 0;
+
+
+let anchors = [
+    { x: 150, y: 800 },
+    { x: 300, y: 800 },
+    { x: 450, y: 800 }
+];
+
+
 // Game variables
 let ball = {
-    x: 150,
-    y: 450,
+    x: anchors[level].x,
+    y:anchors[level].y,
     radius: 20,
     vx: 0,
     vy: 0,
     isDragging: false,
-    isLaunched: false
+    isLaunched: false,
+    visible: true
 };
 
-let anchors = [
-    { x: 150, y: 450 },
-    { x: 300, y: 450 },
-    { x: 450, y: 450 }
-];
 
 let distances = [100,125,50]; // Set distance away from the anchors at a 45 degree angle
 const angle = Math.PI/4
@@ -36,7 +43,6 @@ let objectives = anchors.map((anchor, index) => ({
 }));
 
 
-let level = 0;
 
 let obj_marker = {
     x: objectives[level].x,
@@ -49,15 +55,11 @@ let obj_marker = {
 let anchor = anchors[level];
 let isLaunched = false;
 
-const max_distx = 100
-const max_disty = Math.tan(angle) * max_distx
-const max_dist = Math.sqrt(max_distx ** 2 + max_disty ** 2)
+let max_dist = distances[level] + 100; //buffer to solidfy reaching the objective
+let max_distx = max_dist * Math.cos(Math.PI / 4);
+let max_disty = max_dist * Math.sin(Math.PI / 4);
 
 export function dragBall(x ) {
-     if (x < 0){
-        console.warn("Warning: x is negative, getting the absolute value");
-        x = Math.abs(x);
-     }
     let dist_x = Math.abs(ball.x) - anchor.x;
     let dist_y = Math.abs(ball.y) - anchor.y;
     let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)
@@ -68,29 +70,44 @@ export function dragBall(x ) {
 }
 
 let parabola = null;
-let launchtime = 0;
+let anchorpath = null;
+let anchorlaunchtime = 0;
+let parabolalaunchtime = 0;
 function releaseBall(e) {
     if (!ball.isLaunched) {
         ball.isDragging = false;
         isLaunched = true;
         ball.isLaunched = true;
         // Calculate launch velocity based on pull-back distance
-        parabola = calculateParabolicArc(ball.x, ball.y, anchor.x, anchor.y, obstacles[0].x, obstacles[0].y);
-        launchtime = performance.now();
+        anchorpath = calculateBallToAnchorPath(ball.x, ball.y, anchor.x, anchor.y)
+        anchorlaunchtime = performance.now()
+
     }
 }
 
-// Function to calculate the parabolic path
-function calculateParabolicArc(startX, startY, anchorX, anchorY, endX, endY) {
-    // Calculate the midpoint between the start, anchor, and end points
-    let midX = anchorX;
-    let midY = anchorY; // Make sure the anchor point is the vertex of the parabola
+function calculateParabolicArc(startX, startY, endX, endY) {
+    // Calculate the midpoint between the start and end points
+    let midX = (startX + endX) / 2;
+    // Set the midY (vertex) above the start and end Y positions
+    let midY = Math.min(startY, endY) - 100;  // You can adjust the 100 to control the height of the arc
 
-    // Now we need to ensure the parabola passes through the start, anchor, and end points
     return function(t) {
-        // t is between 0 and 1
         let x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * midX + t * t * endX;
         let y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * midY + t * t * endY;
+
+        return { x, y };
+    };
+}
+
+
+
+function calculateBallToAnchorPath(startX, startY, anchorX, anchorY) {
+
+    // Now we need to ensure the path passes through the start and anchor points
+    return function(t) {
+        // t is between 0 and 1
+        let x = (1 - t) * startX + t * anchorX;
+        let y = (1 - t) * startY + t * anchorY;
         return { x, y };
     };
 }
@@ -150,9 +167,12 @@ class Obstacle {
                 }
 
                 // Play the collision GIF at the exact collision point
+                const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
+                const x = rect.left + this.x + this.width / 2;
+                const y = rect.top + this.y + this.height / 2;
                 obstacles.pop(ball)
-                
-                playCollisionGif(this.x +this.width/2, this.y + this.height/2);
+                console.log(this.x + " " + this.y)
+                playCollisionGif(x, y);
             }
         }
     }
@@ -160,6 +180,7 @@ class Obstacle {
 
 function playCollisionGif(x, y) {
     const gif = document.getElementById('collisionGif');
+    ball.visible = false;
 
     // Reset the src to restart the GIF animation
     gif.src = gif.src;
@@ -191,7 +212,8 @@ function handleNextLevel(){
         vx: 0,
         vy: 0,
         isDragging: false,
-        isLaunched: false
+        isLaunched: false,
+        visible: true
     };
     obj_marker = {
         x: objectives[level].x,
@@ -200,15 +222,29 @@ function handleNextLevel(){
     }
     obj_timer = 3.0;
     
-    addObstacle(700,300,50,50);
+    addObstacle(levelobstacles[level].x, levelobstacles[level].y, levelobstacles[level].w, levelobstacles[level].h)
     parabola = null;
-    launchtime = null;
-    flighttime = 0;
+    anchorpath = null;
+    anchorlaunchtime = 0;
+    anchorflightime = 0;
+    parabolalaunchtime = 0;
+    parabolaflighttime = 0;
+    reachedObstacle = false;
+    max_dist = distances[level] + 100;
+    max_distx = max_dist * Math.cos(Math.PI / 4);
+    max_disty = max_dist * Math.sin(Math.PI / 4);
+    
+
 
 }
+let obstacles = []
 
+let levelobstacles = [
+{x: 1280, y: 500, w: 50, h: 50},
+{x: 900, y: 100, w: 50, h: 50},
+{x: 800, y: 50, w: 50, h: 50}
+];
 
-let obstacles = [];
 
 function drawObstacles() {
     for (let obstacle of obstacles) {
@@ -221,7 +257,7 @@ function addObstacle(x,y,w,h) {
     let obstacle = new Obstacle(x, canvas.height - y, w, h);
     obstacles.push(obstacle);
 }
-addObstacle(600,50,50,50)
+addObstacle(levelobstacles[level].x, levelobstacles[level].y, levelobstacles[level].w, levelobstacles[level].h)
 
 function isBallInObjective(ball, obj_marker) {
     const dx = ball.x - obj_marker.x;
@@ -234,8 +270,11 @@ let obj_timer = 3.0;
 
 let lastframetime = performance.now()
 let totalframetime = 0;
-let flighttime = 0
+let anchorflightime = 0
+let parabolaflighttime = 0;
 let parabolatime = 4000;
+let anchortime = 1000;
+
 //preciso somar os frametimes ate dar 1/60, ai eu rodo a fisica
 function animate() {
     let deltaTime = performance.now() - lastframetime;
@@ -254,6 +293,41 @@ function animate() {
         ctx.stroke();
     }
 
+    // Draw the slingshot itself
+    let slingshotImage = new Image();
+    slingshotImage.src = '../static/img/slingshot.png';
+
+    // Calculate the required scale to fit the anchor
+    let slingshotHeight = 987; // Set the original height of the slingshot image
+    let distanceToAnchor = Math.abs(anchor.y - canvas.height); // Distance from the anchor to the floor
+    let scale = distanceToAnchor / slingshotHeight;
+
+
+    // Save the context state
+    ctx.save();
+
+    // Move to the anchor point and rotate
+    ctx.translate(anchor.x, anchor.y);
+
+
+    // Draw the scaled slingshot image with the base aligned
+    let scaledWidth = slingshotImage.width * scale;
+    let scaledHeight = slingshotImage.height * scale;
+
+    ctx.drawImage(
+        slingshotImage, 
+        -scaledWidth / 2, // Center the image horizontally
+        -scaledHeight /10,    // Position the base at the anchor point
+        scaledWidth, 
+        scaledHeight
+    );
+
+    // Restore the context state
+    ctx.restore();
+
+
+
+
     // Accumulate frame time and update physics at 60 FPS
     totalframetime += deltaTime;
     while (totalframetime >= (1000 / 60)) { // Update physics if enough time has passed
@@ -261,7 +335,7 @@ function animate() {
         totalframetime -= (1000 / 60); // Decrease the accumulated time by the amount needed for the next physics update
     }
 
-
+    if (ball.visible){ //only draw the ball if it is visible
     let ballImage = new Image();
     ballImage.src = '../static/img/ball.png';
     // Draw the ball
@@ -272,6 +346,7 @@ function animate() {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 2;
     ctx.stroke();
+    }
 
     // Draw obstacles (for collision detection)
     drawObstacles();
@@ -288,15 +363,31 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+let reachedObstacle = false;
 //essa funcao soh vai rodar a cada 1/60 segs
 function updatePhysics(){
 
-    if (isLaunched && parabola != null){
-        flighttime += (performance.now() - launchtime)
-        let t = flighttime/parabolatime;
-        ball.x = parabola(t).x
-        ball.y = parabola(t).y
+    if (isLaunched && parabola ==  null && !reachedObstacle){ //means the ball is still going to the anchor point
+        anchorflightime += (performance.now() - anchorlaunchtime);
+        let t = anchorflightime/anchortime;
+        ball.x = anchorpath(t).x;
+        ball.y = anchorpath(t).y;
+        if (t >= 1) 
+         {
+            parabola = calculateParabolicArc(ball.x, ball.y, obstacles[0].x, obstacles[0].y);
+            parabolalaunchtime = performance.now();
+         }
     }
+
+    else if (isLaunched && parabola != null && !reachedObstacle) {
+        parabolaflighttime += (performance.now() - parabolalaunchtime);
+        let t = parabolaflighttime / parabolatime;
+        ball.x = parabola(t).x;
+        ball.y = parabola(t).y;
+        if (t >= 1) reachedObstacle = true;
+    }
+
+    
 
     // Collision detection with ground
     if (ball.y + ball.radius > canvas.height) {

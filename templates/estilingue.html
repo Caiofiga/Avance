@@ -4,12 +4,14 @@
     <title>Slingshot with Collision Detection</title>
     <link rel="stylesheet" href="../static/css/estilingue.css" />
   </head>
-  <body>
+  <body
+    style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')"
+  >
     <canvas
       id="gameCanvas"
-      style="border: 1px solid"
       width="1920"
       height="1080"
+      style="border: 2px solid black"
     ></canvas>
     <img
       id="collisionGif"
