@@ -6,6 +6,7 @@ let resetLastAngle;
     resetLastAngle = (await import("./webhooks-estilingue.js")).resetLastAngle;
 })();
   
+import 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js';
   // Get the canvas and context
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -67,6 +68,8 @@ export function dragBall(x ) {
         ball.x += -x * max_distx
         ball.y += Math.tan(angle) * x * max_disty
     }
+    if (dist <= 1) window.isinanchor = true;
+    else window.isinanchor = false;
 }
 
 let parabola = null;
@@ -166,6 +169,7 @@ class Obstacle {
                     collisionY = this.y + this.height;
                 }
 
+
                 // Play the collision GIF at the exact collision point
                 const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
                 const x = rect.left + this.x + this.width / 2;
@@ -193,7 +197,7 @@ function playCollisionGif(x, y) {
     // Hide the gif after 1.5 seconds
     setTimeout(() => {
         gif.style.display = 'none';
-        handleNextLevel();
+        handleGameWin()
     }, 1500);
 }
 
@@ -237,6 +241,28 @@ function handleNextLevel(){
 
 
 }
+
+function handleGameWin(){
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+    myModal.show();
+    myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
+}
+
+export function lockModal(angle) {
+    const closemodalbutton = document.getElementById('closemodalbutton');
+    const modaltext = document.getElementById('lowerangle');
+
+    // Update the locked state based on the angle
+    if (angle > 20) {
+        closemodalbutton.disabled = true;
+        modaltext.style.visibility = 'inherit';
+
+    } else {
+        closemodalbutton.disabled = false;
+        modaltext.style.visibility = 'hidden';
+    }
+}
+
 let obstacles = []
 
 let levelobstacles = [
@@ -288,8 +314,8 @@ function animate() {
         ctx.beginPath();
         ctx.moveTo(anchor.x, anchor.y);
         ctx.lineTo(ball.x, ball.y);
-        ctx.strokeStyle = 'gray';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'brown';
+        ctx.lineWidth = 4;
         ctx.stroke();
     }
 

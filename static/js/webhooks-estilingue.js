@@ -1,4 +1,4 @@
-import {dragBall} from "./estilingue.js"
+import {dragBall, lockModal} from "./estilingue.js"
 //region Camera Worker
 const CameraworkerCode = `
     self.onmessage = function(event) {
@@ -50,9 +50,11 @@ worker.postMessage('Start');
 worker.onmessage = function(event) {
     if (event.data.type === 'movement') {
         let displacement = event.data.data;
+        lockModal(displacement.angle);
         if (Math.abs(displacement.angle - lastangle) > 5) {
         let percentMoved = (displacement.angle - lastangle)/180 
         lastangle = displacement.angle;
+        if (window.isinanchor) lastangle = 0;
         dragBall(percentMoved);
         }
         let admindata = JSON.stringify(
