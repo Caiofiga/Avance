@@ -48,7 +48,7 @@ const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage('Start');
 worker.onmessage = function(event) {
-    if (event.data.type === 'movement') {
+    if (event.data.type === 'movement' && document.getElementById("gameScreen").style.display == "block") {
         let displacement = event.data.data;
         lockModal(displacement.angle);
         if (Math.abs(displacement.angle - lastangle) > 5) {
@@ -59,6 +59,7 @@ worker.onmessage = function(event) {
         }
         let admindata = JSON.stringify(
           { data:{
+              game: 'bird',
               type: "movement",
               displacement: displacement
           }
@@ -170,9 +171,6 @@ export function sendData(dataBatch) {
     adminWorker.postMessage({ type: 'sendData', payload: { dataBatch: dataBatch } });
 }
 
-// Listen for messages from the Web adminWorker
-adminWorker.onmessage = function(event) {
-};
 
 // Example usage:
 openWebSocket('ws://localhost:5000');  // Replace with your WebSocket URL

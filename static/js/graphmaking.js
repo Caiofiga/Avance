@@ -1,6 +1,6 @@
  // Initialize the Dygraph with empty data
 
-const g = new Dygraph(
+const graph1 = new Dygraph(
     document.getElementById("chart1"),
     [], // Initial empty dataset
     {
@@ -16,6 +16,24 @@ const g = new Dygraph(
       legend: "always",
     }
   );
+  const graph2 = new Dygraph(
+    document.getElementById("chart1"),
+    [], // Initial empty dataset
+    {
+      title: "Real-time Accelerometer Data",
+      labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
+      ylabel: "Acceleration (m/s²)",
+      xlabel: "Time (seconds)",
+      colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
+      strokeWidth: 2.5,
+      drawPoints: true,
+      pointSize: 4,
+      showRoller: false,
+      legend: "always",
+    }
+  );
+
+
 let dataBuffer = [];
   
   // Inline web worker creation
@@ -96,19 +114,26 @@ let dataBuffer = [];
 
       dataBuffer.shift();
     }
-
-    function checkThresholds(averages) {
-      if (averages.x > 10 || averages.y > 10 || averages.z > 10) {
-        alert("Threshold exceeded");
-      }
-    }
   
+    }
     // Update the Dygraph with the new data
-    g.updateOptions({
-      file: dataBuffer,
-    });
-  };
 
+    function UpdateGraph(game){
+      switch (game){
+      case 'plant':
+        graph1.updateOptions({ file: dataBuffer });
+        graph2.updateOptions({ file: null });
+        break;
+      case 'bird':
+        graph2.updateOptions({ file: dataBuffer });
+        graph1.updateOptions({ file: null });
+        break;
+      default:
+        graph1.updateOptions({ file: null });
+        graph2.updateOptions({ file: null });
+        break;
+      }
+      }
 
   function ExportGraph() {
 

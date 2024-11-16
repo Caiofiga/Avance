@@ -2,10 +2,14 @@
 
 // Dynamically import the module after the current module is loaded
 let resetLastAngle;
+let sendData;
 (async () => {
     resetLastAngle = (await import("./webhooks-estilingue.js")).resetLastAngle;
+    sendData = (await import("./webhooks-estilingue.js")).sendData;
 })();
-  
+
+
+
 import 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js';
   // Get the canvas and context
 const canvas = document.getElementById('gameCanvas');
@@ -70,6 +74,7 @@ export function dragBall(x ) {
     }
     if (dist <= 1) window.isinanchor = true;
     else window.isinanchor = false;
+    
 }
 
 let parabola = null;
@@ -243,6 +248,15 @@ function handleNextLevel(){
 }
 
 function handleGameWin(){
+    let data = JSON.stringify(
+        { data:{
+            type: 'bird',
+            level: level,
+            completed: level >= (anchors.length -1)
+        }
+        }
+    )
+    sendData(data)
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
     myModal.show();
     myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
@@ -427,5 +441,16 @@ function updatePhysics(){
     }
 }
 
-// Start the animation
-animate();
+document.getElementById("startButton").addEventListener("click", () => {
+    animate();
+    let data = JSON.stringify(
+        { data:{
+            type: 'start',
+            game: 'game_2'
+        }
+        }
+    )
+    sendData(data);
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("gameScreen").style.display = "block";
+  });

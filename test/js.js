@@ -39,14 +39,6 @@ for (i = 0; i < coll.length; i++) {
 }
 
 
-let green_counter = 0
-function TurnGreen() {
-    let circles = document.getElementsByClassName('circle');
-    circles[green_counter].style.backgroundColor = 'green';
-    green_counter++
-}
-
-
 var opts = {
   angle: -0.2, // The span of the gauge arc
   lineWidth: 0.2, // The line thickness
@@ -66,81 +58,106 @@ var opts = {
   
 };
 
-var target = document.getElementById('foo'); // your canvas element
-var gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
-gauge.maxValue = 100; // set max gauge value
-gauge.setMinValue(-20);  // Prefer setter over gauge.minValue = 0
-gauge.animationSpeed = 32; // set animation speed (32 is default value)
+var plantTarget = document.getElementById('gauge1'); // your canvas element
+var plantGauge = new Gauge(plantTarget,150,300).setOptions(opts); // create sexy plantGauge!
+plantGauge.maxValue = 100; // set max plantGauge value
+plantGauge.setMinValue(-20);  // Prefer setter over plantGauge.minValue = 0
+plantGauge.animationSpeed = 32; // set animation speed (32 is default value)
+
+var birdTarget = document.getElementById('gauge2'); // your canvas element
+var birdGauge = new Gauge(birdTarget, 150,300).setOptions(opts); // Correct initialization
+birdGauge.maxValue = 100; 
+birdGauge.setMinValue(-20);  
+birdGauge.animationSpeed = 32;
 
 
-function adjustSpeedo(value) {
-  gauge.set(value);
-}
-function Shake(){
-  var elem = document.getElementById('shaking');
-  if (elem.classList.contains('shaking')) { //kid is normal in his boots
-    elem.classList.remove('shaking');
-    elem.classList.add('normal');
-    elem.innerHTML = "Normal";
-  }
-  else if (elem.classList.contains('normal')) { //kid is shaking in his boots
-    elem.classList.remove('normal');
-    elem.classList.add('shaking');
-    elem.innerHTML = "Shaking";
+function adjustSpeedo(value, game) {
+  switch (game) {
+    case 'plant':
+      let movement = value.dx
+      plantGauge.set(movement); // Use the Gauge instance directly
+      break;
+    case 'bird':
+      let angle = value.angle
+      birdGauge.set(angle); // Use the Gauge instance directly
+      break;
+    default:
+      console.warn('Unknown game type:', game);
   }
 }
+
+
 // Creating the Web Worker for the gauge and other data
-const workerBlob = new Blob([`
+const CommsworkerBlob = new Blob([`
   importScripts('https://cdn.socket.io/4.8.0/socket.io.min.js');
   let socket;
 
-  self.onmessage = function(event) {
-    if (event.data.type === 'openWebSocket') {
-      const { url } = event.data.payload;
-      socket = io.connect(url);
-      console.log(' Que porra eh essWebSocket connection opened:', url);
+self.onmessage = function (event) {
+  if (event.data.type === 'openWebSocket') {
+    const { url } = event.data.payload;
+    socket = io.connect(url);
+    console.log('WebSocket connection opened:', url);
 
-      // Handle messages from the server
-      socket.on('plant', (data) => {
-        self.postMessage(data);  // Include type 'plant'
-      });
-
-      // Handle displacement messages from the server
-      socket.on('movement', (data) => {
-        self.postMessage(data);  // Include type 'displacement'
-      });
-    }
-  };
+    // Generalized handler for all events
+    socket.onAny((eventType, data) => {
+      self.postMessage(data);
+    });
+  }
+};
 `], { type: 'application/javascript' });
 
 // Initialize the worker
-const worker = new Worker(URL.createObjectURL(workerBlob));
+const Commworker = new Worker(URL.createObjectURL(CommsworkerBlob));
 
 // Define WebSocket URL
 const socketUrl = 'ws://localhost:5000'; // Replace with your WebSocket URL
 
 // Start the WebSocket connection inside the Web Worker
-worker.postMessage({ type: 'openWebSocket', payload: { url: socketUrl } });
+Commworker.postMessage({ type: 'openWebSocket', payload: { url: socketUrl } });
 
 // Receive messages from the Web Worker
-worker.onmessage = function(event) {
+Commworker.onmessage = function(event) {
   json_data = JSON.parse(event.data).data;
+  console.log(json_data.type)
   switch (json_data.type) {
+    case 'start':
+    StartGame(json_data.game)
+    break;
     case 'movement':
-      dx = json_data.displacement.dx;
-      adjustSpeedo(dx); // Use the correct property from data if needed
+      dx = json_data.displacement;
+      adjustSpeedo(dx, json_data.game);
       break;
     case 'plant':
-      processData(json_data);  // Assuming data is JSON-parsed correctly
+      ShowPlantData(json_data); 
+      break;
+    case 'bird':
+      ShowBirdData(json_data);
       break;
     default:
-      console.log('Unknown message type:', json_data.type);
+      console.warn('Unknown message type:', json_data.type);
   }
 };
 
-function processData(data) {
-  let id = parseInt(data.plant, 10);
+function StartGame(game){
+  let gameDiv = document.getElementById(game);
+  gameDiv.querySelector('#gameOverlay').style.display = 'none';
+}
 
-  let circles = document.getElementsByClassName('circle');
+function ShowBirdData(data) {
+  let id = parseInt(data.level, 10);
+  let gameElement = document.getElementById('game_2')
+  let circles = gameElement.getElementsByClassName('circle');
+  circles[id].style.backgroundColor = 'green';
+
+  if (data.completed){
+    console.log("complete!")
+    gameElement.querySelector("#finished_alert").style.display = 'flex';
+  }
+}
+
+function ShowPlantData(data) {
+  let id = parseInt(data.plant, 10);
+  let gameElement = document.getElementById('game_1')
+  let circles = gameElement.getElementsByClassName('circle');
   circles[id-1].style.backgroundColor = 'green';
 }

@@ -49,6 +49,7 @@ worker.onmessage = function(event) {
           handleMovement(displacement.dx);
         let admindata = JSON.stringify(
           { data:{
+              game: 'plant',
               type: "movement",
               displacement: displacement
           }
