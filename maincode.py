@@ -15,6 +15,7 @@ from flask_socketio import SocketIO, emit
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 import secrets
+import base64
 
 # Preface: This is a fucking mess
 
@@ -128,7 +129,7 @@ def process_video():
                          tuple(wrist.astype(int)), (0, 255, 0), 3)
 
                 # Display the calculated angle at the elbow position
-                cv2.putText(image, f"{angle:.2f} degrees", (10, 50),
+                cv2.putText(image, f"{angle:.2f} degrees", (10, 70),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
                 cv2.putText(image, f"dx: {delta_x:.2f}, dy: {delta_y:.2f}", (10, 30),
@@ -143,8 +144,12 @@ def process_video():
         # Draw center point on the image
         cv2.circle(image, (int(center_x), int(center_y)), 5, (0, 255, 0), -1)
 
-        # Display the resulting image.
-        cv2.imshow('Hand and Pose Tracking', image)
+        # Encode the frame as JPEG
+        _, buffer = cv2.imencode('.jpg', image)
+        frame_data = base64.b64encode(buffer).decode('utf-8')
+
+        # Send frame to the client via WebSocket
+        socketio.emit('video_feed', {'frame': frame_data})
 
         # Exit if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):

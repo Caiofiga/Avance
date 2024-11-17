@@ -68,7 +68,7 @@ export function dragBall(x ) {
     let dist_x = Math.abs(ball.x) - anchor.x;
     let dist_y = Math.abs(ball.y) - anchor.y;
     let dist = Math.sqrt(dist_x ** 2 + dist_y ** 2)
-    if (!ball.isLaunched && dist <= max_dist) {
+    if (!ball.isLaunched) {
         ball.x += -x * max_distx
         ball.y += Math.tan(angle) * x * max_disty
     }
@@ -464,6 +464,7 @@ document.getElementById("startButton").addEventListener("click", () => {
     )
     sendData(data);
     document.getElementById("startScreen").style.display = "none";
-    document.getElementById("gameScreen").style.display = "block";
+    document.getElementById("gameScreen").style.display = "flex";
+    document.getElementById("video_feed").style.display = "flex";
     playing = true;
   });

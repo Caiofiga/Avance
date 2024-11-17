@@ -2,13 +2,13 @@
 <html lang="en">
   <head>
     <script
-    type="text/javascript"
-    src="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.js"
-  ></script>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.css"
-  />
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/dygraphs@2.1.0/dist/dygraph.min.css"
+    />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Test Game Lads</title>
@@ -25,70 +25,108 @@
       crossorigin="anonymous"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
-  <body style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')">
-    <div id="plot"></div>
-    <!-- Reference the image from Flask's static folder -->
-    <img id="movable" src="{{ url_for('static', filename='img/can.png') }}" />
-    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant1" data-watertime="1"></img>
-    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant2" data-watertime="1"></img>
-    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant3" data-watertime="1"></img>
-    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant4" data-watertime="1"></img>
-    <img class="plant" src="{{url_for('static', filename='img/p1.png')}}" id="plant5" data-watertime="1"></img>
+  </head>
+  <body
+    style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')"
+  >
+    <div id="video_feed">
+      <img id="videoFeed" style="border-radius: inherit" />
+    </div>
 
-      <!-- Victory Modal -->
-      <div
-        class="modal fade"
-        id="exampleModal"
-        tabindex="-1"
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-        data-bs-backdrop="static"
-        data-bs-keyboard="false"
-      >
-        <div class="modal-dialog modal-fullscreen modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h1 class="modal-title fs-5" id="exampleModalLabel">Parabéns</h1>
-              <h3 id="lowerangle">
-                Por Favor Diminua o angulo do braco para continuar!
-              </h3>
+    <div id="startScreen">
+      <h1>Welcome to plant Game</h1>
+      <p>Instructions:</p>
+      <ul>
+        <li>Drag the plant back to aim.</li>
+        <li>Release to fire the plant.</li>
+        <li>Hit plants to score points.</li>
+      </ul>
+      <button id="startButton" class="btn btn-primary">Start plant</button>
+    </div>
+    <div id="gameScreen">
+      <!-- Reference the image from Flask's static folder -->
+      <img id="movable" src="{{ url_for('static', filename='img/can.png') }}" />
+      <img
+        class="plant"
+        src="{{url_for('static', filename='img/p1.png')}}"
+        id="plant1"
+        data-watertime="1"
+      />
+      <img
+        class="plant"
+        src="{{url_for('static', filename='img/p1.png')}}"
+        id="plant2"
+        data-watertime="1"
+      />
+      <img
+        class="plant"
+        src="{{url_for('static', filename='img/p1.png')}}"
+        id="plant3"
+        data-watertime="1"
+      />
+      <img
+        class="plant"
+        src="{{url_for('static', filename='img/p1.png')}}"
+        id="plant4"
+        data-watertime="1"
+      />
+      <img
+        class="plant"
+        src="{{url_for('static', filename='img/p1.png')}}"
+        id="plant5"
+        data-watertime="1"
+      />
+    </div>
+    <!-- Victory Modal -->
+    <div
+      class="modal fade"
+      id="exampleModal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div class="modal-dialog modal-fullscreen modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Parabéns</h1>
+          </div>
+          <div class="modal-body" id="modal-text">
+            <div id="stars">
+              <p>Parabens!</p>
+              <span class="stars star1">★</span>
+              <span class="stars star2">★</span>
+              <span class="stars star3">★</span>
             </div>
-            <div class="modal-body" id="modal-text">
-              <div id="stars">
-                <p>Parabens!</p>
-                <span class="stars star1">★</span>
-                <span class="stars star2">★</span>
-                <span class="stars star3">★</span>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal"
-                id="closemodalbutton"
-              >
-                Close
-              </button>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              id="closemodalbutton"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <script>
-      window.static_folder = {    
+      window.static_folder = {
         0.75: "{{ url_for('static', filename='img/p2.png') }}",
         0.5: "{{ url_for('static', filename='img/p3.png') }}",
         0.25: "{{ url_for('static', filename='img/p4.png') }}",
-        0.0: "{{ url_for('static', filename='img/p5.png') }}"}
-        //need to store this in a global variable to use in JS
-      </script>
-      
+        0.0: "{{ url_for('static', filename='img/p5.png') }}",
+      };
+      //need to store this in a global variable to use in JS
+    </script>
 
-      <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-      <script src="{{ url_for('static', filename='js/congrats.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/congrats.js') }}"></script>
     <!-- Bootstrap and JS scripts -->
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -96,8 +134,14 @@
       crossorigin="anonymous"
     ></script>
     <!-- Reference the JS files from Flask's static folder -->
-     <script type="module" src=" {{ url_for('static', filename='js/testgamelogic.js')}}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/webhooks-regador.js') }}"></script>
+    <script
+      type="module"
+      src=" {{ url_for('static', filename='js/testgamelogic.js')}}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='js/webhooks-regador.js') }}"
+    ></script>
     <script
       src="https://code.jquery.com/jquery-3.7.1.min.js"
       integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="

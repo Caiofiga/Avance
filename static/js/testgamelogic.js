@@ -21,15 +21,7 @@ function moveDiv(value){
  
  let time = 0;
  let timeinterval = null;
- addEventListener('DOMContentLoaded', () => {
- 
- function increaseTime(){
-     time += 0.1;
- }
- timeinterval = setInterval(increaseTime, 100);
- 
- });
- 
+
  const plants = document.querySelectorAll('.plant');
  const wateringcan = document.getElementById('movable');
  
@@ -47,9 +39,28 @@ function moveDiv(value){
  
  setInterval(plantinterval, 100);
  
- wateringcan.addEventListener('overlap', handleOverlap);
  
+document.getElementById("startButton").addEventListener("click", () => {
+    wateringcan.addEventListener('overlap', handleOverlap);
 
+    function increaseTime(){
+        time += 0.1;
+    }
+    timeinterval = setInterval(increaseTime, 100);
+    let data = JSON.stringify(
+        { data:{
+            type: 'start',
+            game: 'game_1'
+        }
+        }
+    )
+    sendData(data);
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("video_feed").style.display = "flex";
+    document.getElementById("gameScreen").style.display = "flex";
+
+    playing = true;
+  });
  let overlaptimes = {}; //we will use this to pass the time of overlap to the backend
  function handleOverlap(event) {
      const plant = document.getElementById(event.detail.plantId);
@@ -100,6 +111,7 @@ function moveDiv(value){
  }
  
  function handleGameWin(){
+    if (document.getElementById("startScreen").style.display == "none"){
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
         myModal.show();
         setTimeout(() => {
@@ -127,4 +139,4 @@ function moveDiv(value){
                 console.log(data);
             }
         });
- }
+ }}

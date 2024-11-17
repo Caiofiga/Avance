@@ -43,3 +43,12 @@ body {
   #gameScreen {
     display: none;
   }
+  #video_feed {
+    display: none;
+    position: absolute;
+    left: auto; /* Remove conflicting position */
+    right: 10px; /* Align within gameScreen */
+    top: 10px; /* Optional: position it inside */
+    border-radius: 10px;
+    z-index: 9;
+}

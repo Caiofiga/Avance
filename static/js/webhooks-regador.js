@@ -44,7 +44,7 @@ const blob = new Blob([CameraworkerCode], { type: 'application/javascript' });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage('Start');
 worker.onmessage = function(event) {
-    if (event.data.type === 'movement') {
+    if (event.data.type === 'movement' && document.getElementById("gameScreen").style.display == "flex") {
         let displacement = event.data.data;
           handleMovement(displacement.dx);
         let admindata = JSON.stringify(
@@ -171,5 +171,44 @@ adminWorker.onmessage = function(event) {
 
 // Example usage:
 openWebSocket('ws://localhost:5000');  // Replace with your WebSocket URL
+
+//endregion
+
+//region video-feed worker
+
+const videoWorkerBlob = new Blob([`
+  importScripts('https://cdn.socket.io/4.8.0/socket.io.min.js');
+  let socket;
+
+  self.onmessage = function(event) {
+    if (event.data.type === 'openWebSocket') {
+      // Initialize WebSocket connection
+      socket = io(event.data.url);
+
+      // Handle incoming video feed from the server
+      socket.on("video_feed", function(data) {
+        // Send the frame to the main thread
+        self.postMessage({ frame: data.frame });
+      });
+    }
+  };
+`], { type: 'application/javascript' });
+
+const videoWorker = new Worker(URL.createObjectURL(videoWorkerBlob));
+
+// Set up the worker to handle incoming messages
+videoWorker.onmessage = function(e) {
+  // Extract the frame from the worker's message
+  const frame = e.data.frame;
+
+  // Update the image source in the HTML
+  const img = document.getElementById("videoFeed");
+  img.src = `data:image/jpeg;base64,${frame}`;
+};
+
+// Start the WebSocket connection via the worker
+videoWorker.postMessage({ type: 'openWebSocket', url: 'http://localhost:5000' });
+
+
 
 //endregion

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hand and Pose Tracking</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Hand and Pose Tracking</h1>
+    <img id="videoFeed" style="max-width: 100%" />
+
+    <script>
+      const socket = io.connect();
+
+      socket.on("video_feed", function (data) {
+        const frame = data.frame;
+        const img = document.getElementById("videoFeed");
+        img.src = `data:image/jpeg;base64,${frame}`;
+        console.log(frame);
+      });
+    </script>
+  </body>
+</html>
