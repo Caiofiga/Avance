@@ -102,8 +102,11 @@ function moveDiv(value){
  function handleGameWin(){
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
         myModal.show();
+        setTimeout(() => {
+            startFireworks(document.getElementById('modal-text'));
+            StartConfetti();
+        }, 4500);
         clearInterval(timeinterval);
-        document.getElementById("modal-text").innerHTML = `Parabéns! Você regou todas as plantas em ${time.toFixed(1)} segundos!`;
         wateringcan.removeEventListener('overlap', handleOverlap);
         //need to stop the graph from updating
         let points = permabuffer.map((point) => { // this is a dict of all the points in permabuffer

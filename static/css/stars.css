@@ -7,13 +7,19 @@
   top:25%;
   left: 35%;
 }
+
+
+.star1 { top: 20%; left: 32%; } /* Top vertex */
+.star2 { top: 30%; left: 30%; } /* Bottom left vertex */
+.star3 { top: 30%; left: 29%; } /* Bottom right vertex */
+
 .stars + .stars {
   margin-left: 12%;
   top: 10%;
 }
 .stars + .stars + .stars {
   margin-left: 23.5%;
-  top: 25%;
+  top: 20%;
 }
 
 .star1 {

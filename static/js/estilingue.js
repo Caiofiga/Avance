@@ -264,6 +264,12 @@ function handleGameWin(){
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
     myModal.show();
     myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
+    setTimeout(() => {
+        startFireworks(document.getElementById('modal-text'));
+        StartConfetti();
+    }, 4500);
+
+
 }
 
 export function lockModal(angle) {
