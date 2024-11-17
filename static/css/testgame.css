@@ -70,4 +70,25 @@ body {
     top: 10px; /* Optional: position it inside */
     border-radius: 10px;
     z-index: 9;
+    flex-direction: column;
+    border-radius: inherit;
+    overflow: hidden;
+}
+#Camera_Wrapper {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.6s ease;
+    transform-origin: top right; /* Set the origin to the top-left */
+}
+
+.camera-visible {
+    width: 100%; /* Final width when expanded */
+    height: 100%;
+    transform: scale(1); /* Scale to full size */
+}
+
+.camera-hidden {
+    width: 100%; /* Maintain full width to avoid layout shift */
+    height: 100%;
+    transform: scale(0); /* Scale to zero size */
 }

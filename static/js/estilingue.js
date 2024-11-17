@@ -8,8 +8,6 @@ let sendData;
     sendData = (await import("./webhooks-estilingue.js")).sendData;
 })();
 
-
-
 import 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js';
   // Get the canvas and context
 const canvas = document.getElementById('gameCanvas');

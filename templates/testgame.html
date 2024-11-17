@@ -30,7 +30,12 @@
     style="background-image: url('{{ url_for('static', filename='img/bg.svg') }}')"
   >
     <div id="video_feed">
-      <img id="videoFeed" style="border-radius: inherit" />
+      <button id="captureButton" class="btn btn-info" onclick="ToggleCamera()">
+        Esconder Camera
+      </button>
+      <div id="Camera_Wrapper" class="camera-visible">
+        <img id="videoFeed" style="border-radius: inherit; overflow: hidden" />
+      </div>
     </div>
 
     <div id="startScreen">
@@ -122,6 +127,22 @@
         0.0: "{{ url_for('static', filename='img/p5.png') }}",
       };
       //need to store this in a global variable to use in JS
+      function ToggleCamera() {
+        let camera = document.getElementById("Camera_Wrapper");
+        let button = document.getElementById("captureButton");
+
+        if (camera.classList.contains("camera-hidden")) {
+          // Add animation to expand the camera
+          camera.classList.remove("camera-hidden");
+          camera.classList.add("camera-visible");
+          button.innerHTML = "Esconder Camera";
+        } else {
+          // Add animation to collapse the camera
+          camera.classList.remove("camera-visible");
+          camera.classList.add("camera-hidden");
+          button.innerHTML = "Mostrar Camera";
+        }
+      }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
