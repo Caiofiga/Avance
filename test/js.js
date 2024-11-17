@@ -141,17 +141,31 @@ Commworker.onmessage = function(event) {
 function StartGame(game){
   let gameDiv = document.getElementById(game);
   gameDiv.querySelector('#gameOverlay').style.display = 'none';
+  if (game === "game_1") toggleGraph(plantGraph, true);
+  else if (game === "game_2") toggleGraph(angleGraph, true);
 }
+
+function placeTimer(gameElement, time){
+  let timeElement = gameElement.querySelector("#Time");
+  let timer = document.createElement("p");
+  timer.innerHTML = `Nivel ${id}: ${(time / 1000).toFixed(2)}`;
+  timeElement.appendChild(timer);
+
+}
+
 
 function ShowBirdData(data) {
   let id = parseInt(data.level, 10);
   let gameElement = document.getElementById('game_2')
   let circles = gameElement.getElementsByClassName('circle');
   circles[id].style.backgroundColor = 'green';
+  placeTimer(gameElement, data.time);
 
   if (data.completed){
-    console.log("complete!")
+    toggleGraph(angleGraph, false);
+    console.log("complete!");
     gameElement.querySelector("#finished_alert").style.display = 'flex';
+    gameElement.style ='background-color: rgba(0, 0, 0, 0.7)';
   }
 }
 
@@ -160,4 +174,13 @@ function ShowPlantData(data) {
   let gameElement = document.getElementById('game_1')
   let circles = gameElement.getElementsByClassName('circle');
   circles[id-1].style.backgroundColor = 'green';
+  placeTimer(gameElement, data.time);
+
+  if (data.completed){
+    toggleGraph(plantGraph, false);
+    console.log("complete!")
+    gameElement.querySelector("#finished_alert").style.display = 'flex';
+    gameElement.style ='background-color: rgba(0, 0, 0, 0.7)';
+  }
 }
+

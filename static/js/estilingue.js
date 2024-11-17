@@ -242,21 +242,25 @@ function handleNextLevel(){
     max_dist = distances[level] + 100;
     max_distx = max_dist * Math.cos(Math.PI / 4);
     max_disty = max_dist * Math.sin(Math.PI / 4);
+    playing = true;
     
 
 
 }
 
 function handleGameWin(){
+    playing = false;
     let data = JSON.stringify(
         { data:{
             type: 'bird',
             level: level,
-            completed: level >= (anchors.length -1)
+            completed: level >= (anchors.length -1),
+            time: gametime
         }
         }
     )
     sendData(data)
+    gametime = 0;
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
     myModal.show();
     myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
@@ -314,11 +318,16 @@ let anchorflightime = 0
 let parabolaflighttime = 0;
 let parabolatime = 4000;
 let anchortime = 1000;
+let playing = false;
+let gametime = 0;
 
 //preciso somar os frametimes ate dar 1/60, ai eu rodo a fisica
 function animate() {
     let deltaTime = performance.now() - lastframetime;
     lastframetime = performance.now(); // Update the last frame time
+
+    if (playing) gametime += deltaTime;
+
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -364,9 +373,6 @@ function animate() {
 
     // Restore the context state
     ctx.restore();
-
-
-
 
     // Accumulate frame time and update physics at 60 FPS
     totalframetime += deltaTime;
@@ -453,4 +459,5 @@ document.getElementById("startButton").addEventListener("click", () => {
     sendData(data);
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("gameScreen").style.display = "block";
+    playing = true;
   });

@@ -1,6 +1,6 @@
  // Initialize the Dygraph with empty data
 
-const graph1 = new Dygraph(
+const plantGraph = new Dygraph(
     document.getElementById("chart1"),
     [], // Initial empty dataset
     {
@@ -14,10 +14,11 @@ const graph1 = new Dygraph(
       pointSize: 4,
       showRoller: false,
       legend: "always",
+
     }
   );
-  const graph2 = new Dygraph(
-    document.getElementById("chart1"),
+  const angleGraph = new Dygraph(
+    document.getElementById("chart2"),
     [], // Initial empty dataset
     {
       title: "Real-time Accelerometer Data",
@@ -30,9 +31,16 @@ const graph1 = new Dygraph(
       pointSize: 4,
       showRoller: false,
       legend: "always",
+
     }
   );
 
+  $(document).on( 'shown.bs.tab', function (e) {
+    plantGraph.resize(); // resize the dygraph
+  });
+  $(document).on( 'shown.bs.tab', function (e) {
+    angleGraph.resize(); // resize the dygraph
+  });
 
 let dataBuffer = [];
   
@@ -118,22 +126,10 @@ let dataBuffer = [];
     }
     // Update the Dygraph with the new data
 
-    function UpdateGraph(game){
-      switch (game){
-      case 'plant':
-        graph1.updateOptions({ file: dataBuffer });
-        graph2.updateOptions({ file: null });
-        break;
-      case 'bird':
-        graph2.updateOptions({ file: dataBuffer });
-        graph1.updateOptions({ file: null });
-        break;
-      default:
-        graph1.updateOptions({ file: null });
-        graph2.updateOptions({ file: null });
-        break;
-      }
-      }
+  function toggleGraph(graph, enable){
+     if (enable) graph.updateOptions({ file: dataBuffer });
+     else graph.updateOptions({ file: null });
+  } 
 
   function ExportGraph() {
 

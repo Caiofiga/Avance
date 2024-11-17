@@ -52,6 +52,11 @@
       .finished_alerts{
         display: none;
       }
+      .timedisplays {
+        display: flex;
+        flex-direction: row;
+        border-radius: 10px;
+      }
     </style>
   </head>
   <body>
@@ -92,7 +97,7 @@
                 <div id="gameOverlay" class="game-overlay">
                   <div class="overlay-message">O paciente nao iniciou o jogo ainda!</div>
                 </div>
-                <div id="finished_alert" role="alert" class=" finished_alerts lert alert-success">
+                <div id="finished_alert" role="alert" class=" finished_alerts alert alert-success">
                   <div>O paciente ja completou o jogo!</div>
                 </div>
                 
@@ -112,7 +117,7 @@
                     <div class="circle"></div>
                     <div> &nbsp;</div>
                     <h5> Tempo Demorado</h5>
-                    <div class="Time"></div>
+                    <div class="timedisplays" id="Time"></div>
                   </div>
                   <div class="col-6">
                     <div id="shaking" class="normal"></div>
@@ -124,7 +129,7 @@
                 <div id="gameOverlay" class="game-overlay">
                   <div class="overlay-message">O paciente nao iniciou o jogo ainda!</div>
                 </div>
-                <div id="finished_alert" role="alert" class=" finished_alerts lert alert-success">
+                <div id="finished_alert" role="alert" class=" finished_alerts alert alert-success">
                   <div>O paciente ja completou o jogo!</div>
                 </div>
                 <div class="row">
@@ -138,10 +143,13 @@
                     <div class="circle"></div>
                     <div class="circle"></div>
                     <div class="circle"></div>
+                    <div> &nbsp;</div>
+                    <h5> Tempo Demorado</h5>
+                    <div class="timedisplays" id="Time"></div>
                   </div>
                   <div class="col-6">
                     <div id="shaking" class="normal"></div>
-                    <div id="chart1"></div>
+                    <div id="chart2"></div>
                   </div>
                 </div>
               </div>
@@ -203,12 +211,13 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+
     <script src="../static/js/graphmaking.js"></script>
     <script src="gauge.min.js"></script>
     <script src="js.js"></script>
     <!-- JavaScript for Graphs -->
 <!-- no-->
-<script type="text/javascript" src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
   </body>
 </html>
 
