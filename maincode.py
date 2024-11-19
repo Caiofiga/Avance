@@ -395,9 +395,13 @@ flaskapp.secret_key = secrets.token_urlsafe(16)
 
 # region website serving
 
-
 @flaskapp.route('/')
-def index():
+def home():
+    return render_template('home.html')
+
+
+@flaskapp.route('/testgame')
+def testgame():
     return render_template('testgame.html')
 
 
