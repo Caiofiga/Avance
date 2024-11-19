@@ -17,8 +17,9 @@ const ctx = canvas.getContext('2d');
 let level = 0;
 
 
+
 let anchors = [
-    { x: 150, y: 800 },
+    { x: 150, y: 600 },
     { x: 300, y: 800 },
     { x: 450, y: 800 }
 ];
@@ -466,3 +467,27 @@ document.getElementById("startButton").addEventListener("click", () => {
     document.getElementById("video_feed").style.display = "flex";
     playing = true;
   });
+
+  const gameCanvas = document.getElementById('gameCanvas');
+
+// Adjust the canvas size to the screen
+function resizeCanvas() {
+    const canvasWidth = window.innerWidth * 0.8; // Account for 10% margin on each side
+    const canvasHeight = window.innerHeight * 0.94; // Account for 3% top/bottom margins
+
+    gameCanvas.width = canvasWidth;
+    gameCanvas.height = canvasHeight;
+
+    const scaleX =  1920 / canvasWidth;
+    const scaleY = canvasHeight / 1080;
+
+    anchors = anchors.map(anchor => ({
+        x: anchor.x * scaleX,
+        y: anchor.y * scaleY
+    }));
+}
+
+// Initial resize
+resizeCanvas();
+
+// Adjust canvas size on window resize
