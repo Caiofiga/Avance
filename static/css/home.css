@@ -2,181 +2,97 @@
  * Globals
  */
 
-/* Custom default button */
+/* Botão personalizado */
 .btn-light,
 .btn-light:hover,
 .btn-light:focus {
   color: #333;
-  text-shadow: none; /* Prevent inheritance from `body` */
+  text-shadow: none;
 }
 
-/* Background and body styling */
+/* Fundo e texto */
 body {
   text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
   box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
-  background-color: #343a40; /* Consistente com o tema escuro */
-  color: #fff; /* Cor do texto principal */
-  font-family: Arial, sans-serif;
-}
-
-/* Container principal */
-.cover-container {
-  max-width: 42em;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-/*
- * Header
- */
-/* Centralizando o título */
-main h1 {
-  font-size: 2.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  text-align: center; /* Garante a centralização */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-/* Estilo para os links da navbar */
-.nav-masthead .nav-link {
-  color: rgba(255, 255, 255, .5);
-  border-bottom: .25rem solid transparent;
-  font-weight: bold;
-  text-transform: uppercase;
-  padding: 0.5rem;
-}
-
-.nav-masthead .nav-link:hover,
-.nav-masthead .nav-link:focus {
-  border-bottom-color: rgba(255, 255, 255, .25);
-  color: rgba(255, 255, 255, .75);
-}
-
-.nav-masthead .nav-link + .nav-link {
-  margin-left: 1rem;
-}
-
-.nav-masthead .active {
+  background: linear-gradient(135deg, #1a202c, #2d3748);
   color: #fff;
-  border-bottom-color: #fff;
+  font-family: 'Roboto', Arial, sans-serif;
 }
 
-/* Responsividade para o header */
+/* Header estilizado */
 header {
   padding: 1rem 0;
-  border-bottom: 2px solid #495057;
+  background: #2d3748;
+  border-bottom: 2px solid #4a5568;
 }
 
-/* Formulário de busca no header */
-form.d-flex input[type="search"] {
-  border-radius: 0.25rem;
-  background-color: #495057;
-  color: #fff;
-  border: 1px solid #6c757d;
-}
-
-form.d-flex input[type="search"]::placeholder {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-form.d-flex button {
-  border-radius: 0.25rem;
-  color: #fff;
-  background-color: transparent;
-  border: 1px solid #fff;
-  transition: all 0.3s ease;
-}
-
-form.d-flex button:hover {
-  background-color: #6c757d;
+header h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #f7fafc;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 /*
  * Main Section
  */
 
-/* Título principal */
+/* Título centralizado */
 main h1 {
-  font-size: 2.5rem;
+  font-size: 3rem;
   font-weight: bold;
-  margin-bottom: 1rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  text-align: center;
+  color: #edf2f7;
+  margin-bottom: 2rem;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
 }
 
-/* Texto auxiliar */
-main .lead {
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  color: rgba(255, 255, 255, .75);
-}
-
-/* Botão principal */
-main .btn {
-  color: #343a40;
-  text-transform: uppercase;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  border-radius: 0.25rem;
-}
-
-main .btn:hover {
-  background-color: #6c757d;
-  color: #fff;
-}
-
-/*
- * Cards Section
- */
-
-/* Contêiner de jogos */
-.mainContent {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center; /* Centraliza os jogos */
-  margin-top: 2rem;
-}
-
-/* Cartões dos jogos */
+/* Cartões de jogos */
 .card {
-  background-color: #495057;
-  border: 1px solid #6c757d;
-  color: #fff;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  color: #f7fafc;
   border-radius: 1rem;
-  width: 300px; /* Define um tamanho fixo para os cartões */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
 }
 
 .card-img-top {
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.card-img-top:hover {
+  transform: scale(1.1);
 }
 
 .card-title {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
+  color: #63b3ed;
   margin-bottom: 0.5rem;
 }
 
 .card-text {
   font-size: 1rem;
   margin-bottom: 1rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: #cbd5e0;
 }
 
 .card .btn {
-  border: 1px solid #fff;
-  color: #fff;
+  border: 2px solid #63b3ed;
+  color: #63b3ed;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
 }
 
 .card .btn:hover {
-  background-color: #6c757d;
+  background-color: #63b3ed;
   color: #fff;
+  transform: translateY(-3px);
 }
 
 /*
@@ -184,15 +100,16 @@ main .btn:hover {
  */
 
 footer {
-  background-color: #495057;
-  color: #adb5bd;
-  text-align: center;
+  background: #2d3748;
+  color: #a0aec0;
   padding: 1rem 0;
-  border-top: 2px solid #6c757d;
 }
 
 footer p {
   margin: 0;
+  text-align: end;
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
 /*
@@ -200,12 +117,45 @@ footer p {
  */
 
 @media (max-width: 768px) {
-  .mainContent {
-    flex-direction: column; /* Alinha os jogos em uma única coluna em telas menores */
-    gap: 1.5rem;
+  main h1 {
+    font-size: 2.5rem;
+  }
+
+  .row {
+    flex-direction: column;
   }
 
   .card {
-    width: 100%; /* Ocupa 100% da largura no modo responsivo */
+    margin-bottom: 1.5rem;
+  }
+}
+
+/*
+ * Animações adicionais
+ */
+
+/* Suave aparecimento dos cartões */
+.card {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.card:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+/* Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

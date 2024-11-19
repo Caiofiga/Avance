@@ -10,50 +10,24 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../static/css/home.css">
-
-    <style>
-      /* Estilo adicional para o layout */
-      body {
-        background-color: #343a40; /* Fundo escuro */
-        color: #fff;
-      }
-      header {
-        background-color: #495057;
-        padding: 15px;
-        border-bottom: 2px solid #6c757d;
-      }
-      .nav-link {
-        color: #f8f9fa;
-        transition: color 0.3s;
-      }
-      .nav-link:hover,
-      .nav-link.active {
-        color: #adb5bd;
-      }
-      .game img {
-        border-radius: 10px;
-      }
-    </style>
   </head>
-  <body class="d-flex h-100 text-bg-dark">
+  <body class="d-flex flex-column h-100 text-bg-dark">
 
     <!-- Navbar -->
     <header class="mb-auto">
-      <div class="thirteen">
-        <div class="wrap">
+      <div class="container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between">
           <h1 class="h3 mb-0">AVANCE</h1>
         </div>
       </div>
-            
-  
     </header>
 
     <!-- Main Content -->
-    <!-- Main Content -->
-    <main class="px-3 py-5">
+    <main class="d-flex flex-column align-items-center justify-content-center flex-grow-1 text-center">
       <div class="container">
-        <h1 class="text-center mb-4">Jogos</h1>
-        <div class="row justify-content-between align-items-center">
+        <h1 class="text-center mb-4">Jogos iterativos para avaliação do progresso da reabilitação</h1>
+        <h2 class="text-center mb-4">Serão realizados movimentos de abdução de ombro e flexão e extensão de cotovelo</h2>
+        <div class="row justify-content-center">
           <!-- Jogo do Regador -->
           <div class="col-md-5">
             <div class="card bg-dark text-light h-100">
@@ -69,7 +43,7 @@
           <!-- Jogo do Estilingue -->
           <div class="col-md-5">
             <div class="card bg-dark text-light h-100">
-              <img src="{{ url_for('static', filename='img/estilingue.png') }}" alt="Jogo do Estilingue" class="card-img-top" title="Jogo do Estilingue">
+              <img src="{{ url_for('static', filename='img/jogoregador.png') }}" alt="Jogo do Estilingue" class="card-img-top" title="Jogo do Estilingue">
               <div class="card-body">
                 <h5 class="card-title">Jogo do Estilingue</h5>
                 <p class="card-text">Clique abaixo para jogar</p>
@@ -83,14 +57,12 @@
 
     <!-- Footer -->
     <footer class="mt-auto bg-secondary text-light py-3">
-      <div class="container text-center">
-        <p>© 2024 AVANCE.</p>
+      <div class="container text-end">
+        <p class="mb-0">© 2024 AVANCE.</p>
       </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Font Awesome (para ícones) -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
   </body>
 </html>
