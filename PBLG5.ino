@@ -26,11 +26,39 @@ MagData magData2;           // Magnetometer data for IMU2
 const char* ssid = "SensorAP";
 const char* password = "password123";
 
+// Serial log buffer
+const size_t logBufferSize = 1024;
+char logBuffer[logBufferSize];
+size_t logWriteIndex = 0;
+
 StaticJsonDocument<512> jsonDoc;
 
 // WebSocket and server instances
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+// Function to store logs in the buffer
+void storeLog(const char* message) {
+  size_t len = strlen(message);
+  if (len > logBufferSize) return; // Ignore large messages
+  for (size_t i = 0; i < len; ++i) {
+    logBuffer[logWriteIndex] = message[i];
+    logWriteIndex = (logWriteIndex + 1) % logBufferSize;
+  }
+}
+
+// Function to broadcast serial logs
+void sendLogBuffer(AsyncWebSocketClient* client) {
+  String logs = "";
+  for (size_t i = 0; i < logBufferSize; ++i) {
+    logs += logBuffer[(logWriteIndex + i) % logBufferSize];
+  }
+  client->text(logs);
+}
+
+// Override Serial.print and Serial.println
+#define SerialPrint(x) { Serial.print(x); storeLog(x); }
+#define SerialPrintln(x) { Serial.println(x); storeLog((String(x) + "\n").c_str()); }
 
 // Function to broadcast sensor data over WebSocket
 void notifyClients() {
@@ -99,12 +127,21 @@ if (IMU2.hasMagnetometer()) {
 // WebSocket events
 void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
   if (type == WS_EVT_CONNECT) {
-    Serial.println("WebSocket client connected");
+    SerialPrintln("WebSocket client connected");
     client->ping();
   } else if (type == WS_EVT_DISCONNECT) {
-    Serial.println("WebSocket client disconnected");
+    SerialPrintln("WebSocket client disconnected");
+  } else if (type == WS_EVT_DATA) {
+    String message = String((char*)data).substring(0, len);
+    if (message == "getLogs") {
+      sendLogBuffer(client);
+    } else if (message == "reset") {
+      SerialPrintln("Reset command received!");
+      ESP.restart();
+    }
   }
 }
+
 
 
 void setup() {
