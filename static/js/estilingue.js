@@ -119,6 +119,8 @@ function calculateBallToAnchorPath(startX, startY, anchorX, anchorY) {
     };
 }
 
+let garrafa1 = new Image();
+garrafa1.src = '../static/img/garrafa1.png';
 
 class Obstacle {
     constructor(x, y, width, height) {
@@ -129,8 +131,23 @@ class Obstacle {
     }
 
     drawctx() {
-        ctx.fillStyle = 'red';
+        ctx.fillStyle = 'transparent';
         ctx.fillRect(this.x, this.y, this.width, this.height);
+            // Draw the scaled slingshot image with the base aligned
+    const scalex = gameCanvas.width/1920
+    const scaley = gameCanvas.height/1080
+    let scaledWidth = garrafa1.width * scalex;
+    let scaledHeight = garrafa1.height * scaley;
+
+    ctx.drawImage(
+        garrafa1, 
+        this.x, // Center the image horizontally
+        this.y,    // Position the base at the anchor point
+        scaledWidth, 
+        scaledHeight
+    );
+
+
     }
 
     broadPhaseCheck(ball) {
@@ -141,6 +158,7 @@ class Obstacle {
     }
 
     checkcollision(ball) {
+   
         if (this.broadPhaseCheck(ball)) {
             if (
                 ball.x + ball.radius > this.x && 
@@ -172,7 +190,7 @@ class Obstacle {
                     collisionX = ball.x;
                     collisionY = this.y + this.height;
                 }
-
+                
 
                 // Play the collision GIF at the exact collision point
                 const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
@@ -180,29 +198,26 @@ class Obstacle {
                 const y = rect.top + this.y + this.height / 2;
                 obstacles.pop(ball)
                 console.log(this.x + " " + this.y)
-                playCollisionGif(x, y);
+                showgarrafa5(x, y);
             }
         }
     }
 }
 
-function playCollisionGif(x, y) {
-    const gif = document.getElementById('collisionGif');
-    ball.visible = false;
+function showgarrafa5() {
+    // Substituir a imagem da garrafa1 pela garrafa5
+    garrafa1.src = '../static/img/garrafa5.png';
 
-    // Reset the src to restart the GIF animation
-    gif.src = gif.src;
-
-    // Set the position of the GIF to the collision point
-    gif.style.left = `${x - 50}px`;  // Center the gif horizontally on the collision point
-    gif.style.top = `${y - 50}px`;   // Center the gif vertically on the collision point
-    gif.style.display = 'block';     // Show the gif
-
-    // Hide the gif after 1.5 seconds
-    setTimeout(() => {
-        gif.style.display = 'none';
-        handleGameWin()
-    }, 1500);
+    // Garantir que a nova imagem seja carregada antes de desenhar
+    garrafa1.onload = () => {
+        console.log("Imagem alterada para garrafa5");
+        redrawObstacles(); // Redesenhar os obstáculos para refletir a mudança
+    };
+}
+function redrawObstacles() {
+    // Redesenhar os obstáculos com a nova imagem
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar o canvas
+    drawObstacles(); // Chamar a função para redesenhar os obstáculos
 }
 
 function handleNextLevel(){
