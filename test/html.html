@@ -3,32 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hand and Pose Tracking</title>
+    <title>Debugging Interface</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 20px;
+        background-color: #f4f4f9;
+      }
+      h1 {
+        color: #333;
+      }
+      #logOutput {
+        white-space: pre-wrap;
+        background: #000;
+        color: #0f0;
+        padding: 10px;
+        border: 1px solid #ccc;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      button {
+        margin: 5px;
+        padding: 10px 20px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
   </head>
   <body>
+    <h1>Debugging Interface</h1>
+    <button onclick="sendCommand('getLogs')">View Logs</button>
+    <button onclick="sendCommand('reset')">Reset Device</button>
+    <h2>Logs:</h2>
+    <div id="logOutput">No logs yet...</div>
+
     <script>
       const socket = new WebSocket("ws://192.168.4.1/ws");
+      const logOutput = document.getElementById("logOutput");
 
       // When the connection is open
       socket.addEventListener("open", function () {
         console.log("Connected to the WebSocket server");
+        logOutput.textContent += "Connected to the WebSocket server\n";
       });
 
       // When a message is received
       socket.addEventListener("message", function (event) {
         console.log("Received:", event.data);
+        logOutput.textContent += event.data + "\n";
+        logOutput.scrollTop = logOutput.scrollHeight; // Auto-scroll to the latest message
       });
 
       // When the connection is closed
       socket.addEventListener("close", function () {
         console.log("Disconnected from the WebSocket server");
+        logOutput.textContent += "Disconnected from the WebSocket server\n";
       });
 
       // When an error occurs
       socket.addEventListener("error", function (error) {
         console.error("WebSocket error:", error);
+        logOutput.textContent += "WebSocket error: " + error + "\n";
       });
+
+      // Function to send commands to the WebSocket server
+      function sendCommand(command) {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(command);
+          logOutput.textContent += `Sent command: ${command}\n`;
+        } else {
+          logOutput.textContent +=
+            "Cannot send command, WebSocket is not open\n";
+        }
+      }
     </script>
   </body>
 </html>
