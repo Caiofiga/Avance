@@ -196,7 +196,6 @@ class Obstacle {
                 const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
                 const x = rect.left + this.x + this.width / 2;
                 const y = rect.top + this.y + this.height / 2;
-                obstacles.pop(ball)
                 console.log(this.x + " " + this.y)
                 showgarrafa5(x, y);
             }
@@ -214,6 +213,7 @@ function showgarrafa5() {
         redrawObstacles(); // Redesenhar os obstáculos para refletir a mudança
     };
 }
+
 function redrawObstacles() {
     // Redesenhar os obstáculos com a nova imagem
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar o canvas
