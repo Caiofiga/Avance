@@ -92,3 +92,33 @@ body {
     height: 100%;
     transform: scale(0); /* Scale to zero size */
 }
+ /* Estilo para o botão "Finalizar Jogo" */
+#endButton {
+    position: fixed; /* Fixa o botão no layout */
+    top: 20px; /* Distância do topo */
+    left: 20px; /* Distância da lateral esquerda */
+    background-color: #dc3545; /* Cor padrão do botão "perigo" (vermelho Bootstrap) */
+    color: white; /* Texto branco */
+    font-size: 1.2rem; /* Tamanho do texto */
+    font-weight: bold; /* Negrito para destacar */
+    border: none; /* Remove bordas padrão */
+    border-radius: 10px; /* Bordas arredondadas */
+    padding: 10px 20px; /* Espaçamento interno */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para destaque */
+    cursor: pointer; /* Indica interatividade */
+    transition: all 0.3s ease-in-out; /* Transição suave para hover */
+}
+
+/* Efeito ao passar o mouse sobre o botão */
+#endButton:hover {
+    background-color: #a71d2a; /* Vermelho mais escuro */
+    transform: scale(1.05); /* Aumenta levemente */
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3); /* Sombra mais pronunciada */
+}
+
+/* Efeito ao pressionar o botão */
+#endButton:active {
+    background-color: #841423; /* Vermelho ainda mais escuro */
+    transform: scale(0.95); /* Reduz levemente o botão */
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* Reduz a sombra */
+}

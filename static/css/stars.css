@@ -1,154 +1,156 @@
+/* Estilo Geral das Estrelas */
 .stars {
   color: gold;
   opacity: 0;
   position: absolute;
   display: inline-flex;
-  font-size: 15vh;
-  top:25%;
+  font-size: 12vh; /* Tamanho das estrelas */
+  top: 25%;
   left: 35%;
+  text-shadow: 0px 4px 10px rgba(255, 223, 0, 0.6); /* Brilho sutil */
+  transition: all 0.5s ease-in-out;
 }
 
-
-.star1 { top: 20%; left: 32%; } /* Top vertex */
-.star2 { top: 30%; left: 30%; } /* Bottom left vertex */
-.star3 { top: 30%; left: 29%; } /* Bottom right vertex */
-
-.stars + .stars {
-  margin-left: 12%;
-  top: 10%;
-}
-.stars + .stars + .stars {
-  margin-left: 23.5%;
-  top: 20%;
-}
-
+/* Posicionamento das Estrelas */
 .star1 {
-  animation: fadeIn1 5s ease-in-out forwards,
-              
-             heartbeat 1.5s ease-in-out 5s infinite;
+  top: 20%; 
+  left: 40%; /* Estrela central superior */
+  animation: fadeIn1 1s ease-in-out forwards, pulse 2s ease-in-out infinite;
 }
 
 .star2 {
-  animation: fadeIn2 5s ease-in-out forwards,
-              
-             heartbeat 1.5s ease-in-out 5s infinite;
+  top: 40%; 
+  left: 30%; /* Estrela inferior esquerda */
+  animation: fadeIn2 1.5s ease-in-out forwards, pulse 2s ease-in-out infinite;
 }
 
 .star3 {
-  animation: fadeIn3 5s ease-in-out forwards,
-              
-             heartbeat 1.5s ease-in-out 5s infinite;
+  top: 40%; 
+  left: 50%; /* Estrela inferior direita */
+  animation: fadeIn3 2s ease-in-out forwards, pulse 2s ease-in-out infinite;
 }
-@keyframes heartbeat {
-  0% {
-    transform: scale(1) rotateZ(0deg);
 
+/* Efeito de Brilho Pulsante */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
   }
   50% {
-    transform: scale(1.1) rotateZ(1deg);
+    transform: scale(1.1);
+    opacity: 0.8;
   }
   100% {
-    transform: scale(1) rotateZ(0deg);
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
+/* Animações Suaves de Entrada */
 @keyframes fadeIn1 {
   0% {
     opacity: 0;
-  }
-  33% {
-    opacity: 1;
+    transform: translateY(-20px); /* Efeito de movimento sutil */
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes fadeIn2 {
   0% {
     opacity: 0;
-  }
-  33% {
-    opacity: 0;
-  }
-  66% {
-    opacity: 1;
+    transform: translateY(-20px);
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes fadeIn3 {
   0% {
     opacity: 0;
-  }
-  66% {
-    opacity: 0;
+    transform: translateY(-20px);
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes shake {
-  10%,
-  90% {
-    transform: rotateZ(-1deg);
-  }
 
-  20%,
-  80% {
-    transform: rotateZ(2deg);
-  }
 
-  30%,
-  50%,
-  70% {
-    transform: rotateZ(-3deg);
-  }
 
-  40%,
-  60% {
-    transform: rotateZ(3deg);
-  }
+
+/* Centralizar e estilizar o título "Parabéns" */
+#exampleModalLabel {
+  font-family: 'Poppins', sans-serif;
+  font-size: 4rem; /* Tamanho grande */
+  font-weight: bold;
+  color: #0f4300; /* Verde escuro elegante */
+  text-transform: uppercase;
+  text-align: center;
+
+  background: linear-gradient(135deg, #f0f0f0, #e0e0e0); /* Fundo da caixa */
+  border-radius: 15px; /* Bordas arredondadas */
+  border: 2px solid #d1d1d1; /* Borda suave */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Sombra para destaque */
+  display: inline-block; /* Garante que a caixa ajuste ao tamanho do conteúdo */
 }
 
-.stars::before {
-  content: "★";  /* Ensure it displays the star shape */
+/* Efeito de Glow Suave no Título */
+#exampleModalLabel:hover {
+  text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3), 
+               0px 0px 15px rgba(0, 128, 0, 0.5);
+  transform: scale(1.05); /* Leve aumento ao passar o mouse */
+  transition: all 0.3s ease-in-out; /* Transição suave */
+}
+
+
+
+/* Fundo do Modal Refinado */
+.modal-content {
+  background: linear-gradient(135deg, #e3e3e3, #f5f5f5); /* Gradiente suave de cinza claro */
+  color: #333; /* Texto escuro para contraste */
+  border-radius: 15px; /* Bordas arredondadas */
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2), inset 0px 0px 10px rgba(255, 255, 255, 0.5); /* Sombra externa e interna */
+  padding: 30px;
+  border: 1px solid #d1d1d1; /* Borda fina para destacar o fundo */
+}
+
+/* Efeito de Borda com Brilho Suave */
+.modal-content:before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  font-size: inherit;  /* Make it the same size as the parent star */
-  transform: scale(1);  /* Start at the same size as the parent star */
-  color: gold;
-  opacity: 0;
-  pointer-events: none; /* Ensure it doesn't interfere with interactions */
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 20px; /* Borda externa arredondada */
+  background: linear-gradient(135deg, rgba(200, 200, 200, 0.5), rgba(240, 240, 240, 0.7));
+  z-index: -1; /* Coloca atrás do conteúdo */
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
-.star1::before {
-  animation: pulse 1s ease-in-out 5.5s infinite;
+
+
+/* Ajuste do Botão de Fechar */
+#closemodalbutton {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: #333; /* Fundo cinza escuro */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease-in-out;
 }
 
-.star2::before {
-  animation: pulse 1s ease-in-out 5.5s infinite;
+#closemodalbutton:hover {
+  background: #111; /* Mais escuro no hover */
+  transform: scale(1.05);
 }
-
-.star3::before {
-  animation: pulse 1s ease-in-out 5.5s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  100% {
-    transform: scale(2);  /* Increase the size of the "ghost" star */
-    opacity: 0;
-  }
-}
-
