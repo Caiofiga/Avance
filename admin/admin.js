@@ -1,42 +1,40 @@
 document.querySelectorAll(".folder-title").forEach((folderTitle) => {
-    folderTitle.addEventListener("click", function () {
-      const folder = this.parentElement;
-      const content = this.nextElementSibling;
+  folderTitle.addEventListener("click", function () {
+    const folder = this.parentElement;
+    const content = this.nextElementSibling;
 
-      // Toggle fullscreen mode
-      if (!folder.classList.contains("fullscreen")) {
-        // Expand to fullscreen
-        folder.classList.add("fullscreen");
-        content.style.display = "block";
+    // Toggle fullscreen mode
+    if (!folder.classList.contains("fullscreen")) {
+      folder.classList.add("fullscreen");
+      content.style.display = "block";
 
-        // Add a close button
-        const closeButton = document.createElement("div");
-        closeButton.innerHTML = "&times;";
-        closeButton.classList.add("close-button");
-        closeButton.addEventListener("click", function () {
-          folder.classList.remove("fullscreen");
-          content.style.display = "none";
-          closeButton.remove();
-        });
-        folder.appendChild(closeButton);
-      }
-    });
+      // Add a close button
+      const closeButton = document.createElement("div");
+      closeButton.innerHTML = "&times;";
+      closeButton.classList.add("close-button");
+      closeButton.addEventListener("click", function () {
+        folder.classList.remove("fullscreen");
+        content.style.display = "none";
+        closeButton.remove();
+      });
+      folder.appendChild(closeButton);
+    }
   });
+});
 
-var coll = document.getElementsByClassName("folder");
-var i;
-
-for (i = 0; i < coll.length; i++) {
-  coll[i].addEventListener("click", function() {
+// Handle collapsible sections with animation
+document.querySelectorAll(".folder").forEach((folder) => {
+  folder.addEventListener("click", function () {
     this.classList.toggle("active");
-    var content = this.nextElementSibling;
-    if (content.style.maxHeight){
+    const content = this.nextElementSibling;
+    if (content.style.maxHeight) {
       content.style.maxHeight = null;
     } else {
       content.style.maxHeight = content.scrollHeight + "px";
     }
   });
-}
+});
+
 
 
 var opts = {
@@ -145,11 +143,12 @@ function StartGame(game){
   else if (game === "game_2") toggleGraph(angleGraph, true);
 }
 
-function placeTimer(gameElement, time){
+function placeTimer(gameElement, time, id){
   let timeElement = gameElement.querySelector("#Time");
   let timer = document.createElement("p");
   timer.innerHTML = `Nivel ${id}: ${(time / 1000).toFixed(2)}`;
   timeElement.appendChild(timer);
+  console.log()
 
 }
 
@@ -159,7 +158,7 @@ function ShowBirdData(data) {
   let gameElement = document.getElementById('game_2')
   let circles = gameElement.getElementsByClassName('circle');
   circles[id].style.backgroundColor = 'green';
-  placeTimer(gameElement, data.time);
+  placeTimer(gameElement, data.time, id);
 
   if (data.completed){
     toggleGraph(angleGraph, false);
@@ -169,18 +168,35 @@ function ShowBirdData(data) {
   }
 }
 
+function placePlantTimer(gameElement, time, id) {
+  let timeElement = gameElement.querySelector("#Time");
+  let existingTimer = timeElement.querySelector(`#timer_${id}`);
+  if (existingTimer) existingTimer.remove(); // Remove old timer if exists
+
+  let timer = document.createElement("p");
+  timer.id = `timer_${id}`;
+  timer.innerHTML = `Nivel ${id}: ${(time).toFixed(2)}`;
+  timeElement.appendChild(timer);
+
+}
+
 function ShowPlantData(data) {
   let id = parseInt(data.plant, 10);
-  let gameElement = document.getElementById('game_1')
+  let gameElement = document.getElementById('game_1');
   let circles = gameElement.getElementsByClassName('circle');
-  circles[id-1].style.backgroundColor = 'green';
-  placeTimer(gameElement, data.time);
+  circles[id - 1].style.backgroundColor = 'green';
+  placePlantTimer(gameElement, data.time, id);
 
-  if (data.completed){
+  if (data.completed) {
     toggleGraph(plantGraph, false);
-    console.log("complete!")
+    console.log("complete!");
     gameElement.querySelector("#finished_alert").style.display = 'flex';
-    gameElement.style ='background-color: rgba(0, 0, 0, 0.7)';
+
+    // Ajustando o fundo para algo mais visível
+    gameElement.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'; // Fundo claro
   }
 }
+
+
+
 

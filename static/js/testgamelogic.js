@@ -62,6 +62,7 @@ document.getElementById("startButton").addEventListener("click", () => {
     playing = true;
   });
  let overlaptimes = {}; //we will use this to pass the time of overlap to the backend
+ let completedplants = [];
  function handleOverlap(event) {
      const plant = document.getElementById(event.detail.plantId);
      if(plant.dataset.watertime >= parseFloat(0)){
@@ -86,15 +87,18 @@ document.getElementById("startButton").addEventListener("click", () => {
             overlaptimes[plant.id].push(time + ' end')
 
             let plantIdNumber = plant.id.match(/\d+/)[0]; // Extract the number from the plant id
+            completedplants.push(plantIdNumber);
             let data = JSON.stringify(
                 { data:{
                     type: "plant",
                     plant: plantIdNumber,
                     status: "completed",
-                    time: time
+                    time: time, 
+                    completed: completedplants.length >= 5
                 }
                 }
             )
+            console.log(time);
             sendData(data)
          }
      }
