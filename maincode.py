@@ -16,6 +16,10 @@ from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 import secrets
 import base64
+import nmap
+import subprocess
+import socket
+import os
 
 # Preface: This is a fucking mess
 
@@ -394,6 +398,75 @@ socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
 # region website serving
+
+
+def get_local_subnet():
+    """
+    Detect the local subnet for the active network interface.
+    """
+    try:
+        if os.name == "posix":  # Linux/Mac
+            # Get the subnet using the `ip` command
+            result = subprocess.check_output(
+                "ip -o -f inet addr show | awk '/scope global/ {print $4}'", shell=True
+            )
+            subnet = result.decode().strip()
+        elif os.name == "nt":  # Windows
+            # Parse `ipconfig` output for IP and subnet mask
+            result = subprocess.check_output("ipconfig", shell=True)
+            subnet = None
+            for line in result.decode().splitlines():
+                if "IPv4" in line:
+                    local_ip = line.split(":")[1].strip()
+                if "Subnet Mask" in line:
+                    netmask = line.split(":")[1].strip()
+                    cidr = sum(bin(int(octet)).count("1")
+                               for octet in netmask.split("."))
+                    subnet = f"{local_ip}/{cidr}"
+            if not subnet:
+                raise ValueError("Could not determine subnet")
+        else:
+            raise NotImplementedError("Unsupported OS")
+        print(f"Local subnet: {subnet}")  # Debugging line
+        return subnet
+    except Exception as e:
+        print(f"Error detecting subnet: {e}")
+        return None
+
+
+@flaskapp.route('/scan')
+def subnet_scan():
+    # Initialize the nmap scanner
+    nm = nmap.PortScanner()
+
+    # Define the subnet you want to scan (e.g., 192.168.1.0/24)
+    subnet = get_local_subnet()
+
+    # Scan the subnet
+    print(f"Scanning subnet {subnet}...")
+    # -sn: Ping scan to identify active hosts
+    nm.scan(hosts=subnet, arguments='-sn')
+
+    # Process and print the results
+    print("\nActive hosts:")
+    active_hosts = []
+    for host in nm.all_hosts():
+        print(nm)
+        if 'hostnames' in nm[host]:
+            hostnames = nm[host]['hostnames']
+            name = hostnames[0]['name'] if hostnames else "Unknown"
+            print(f"- {host} ({name})")
+            active_hosts.append({'Host': host, 'Name': name})
+        else:
+            print(f"- {host}")
+            active_hosts.append({'Host': host, 'Name': "Unknown"})
+    return jsonify(active_hosts)
+
+
+@flaskapp.route('/admin')
+def admin():
+    return render_template('admin.html')
+
 
 @flaskapp.route('/')
 def home():

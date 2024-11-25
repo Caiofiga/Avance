@@ -5,26 +5,18 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
-#define IMU_ADDRESS1 0x68    // Address for the first IMU (AD0 = GND)
-#define IMU_ADDRESS2 0x69    // Address for the second IMU (AD0 = 3.3V)
+#define IMU_ADDRESS1 0x68    // Address for the IMU
 #define PERFORM_CALIBRATION // Comment to disable startup calibration
 #define LED_PIN 2
 
-MPU6500 IMU1;               // First IMU instance
-MPU6500 IMU2;               // Second IMU instance
+MPU6500 IMU1;               // IMU instance
+calData calib1 = { 0 };     // Calibration data for IMU
+AccelData accelData1;       // Accelerometer data
+GyroData gyroData1;         // Gyroscope data
+MagData magData1;           // Magnetometer data
 
-calData calib1 = { 0 };     // Calibration data for IMU1
-AccelData accelData1;       // Accelerometer data for IMU1
-GyroData gyroData1;         // Gyroscope data for IMU1
-MagData magData1;           // Magnetometer data for IMU1
-
-calData calib2 = { 0 };     // Calibration data for IMU2
-AccelData accelData2;       // Accelerometer data for IMU2
-GyroData gyroData2;         // Gyroscope data for IMU2
-MagData magData2;           // Magnetometer data for IMU2
-
-const char* ssid = "SensorAP";
-const char* password = "password123";
+const char* ssid = "Figa's iPhone 17 Pro Max";
+const char* password = "dallas99";
 
 // Serial log buffer
 const size_t logBufferSize = 1024;
@@ -69,60 +61,34 @@ void notifyClients() {
 
 // Simulate sensor data
 void updateSensorData() {
-  //clear the json doc
+  // Clear the JSON doc
   jsonDoc.clear();
-// Update IMU1
-IMU1.update();
-IMU1.getAccel(&accelData1);
-IMU1.getGyro(&gyroData1);
-if (IMU1.hasMagnetometer()) IMU1.getMag(&magData1);
 
-// Update IMU2
-IMU2.update();
-IMU2.getAccel(&accelData2);
-IMU2.getGyro(&gyroData2);
-if (IMU2.hasMagnetometer()) IMU2.getMag(&magData2);
+  // Update IMU1
+  IMU1.update();
+  IMU1.getAccel(&accelData1);
+  IMU1.getGyro(&gyroData1);
+  if (IMU1.hasMagnetometer()) IMU1.getMag(&magData1);
 
-// Populate JSON data for IMU1
-JsonObject imu1 = jsonDoc.createNestedObject("IMU1");
-JsonObject imu1Accel = imu1.createNestedObject("Accel");
-imu1Accel["X"] = accelData1.accelX;
-imu1Accel["Y"] = accelData1.accelY;
-imu1Accel["Z"] = accelData1.accelZ;
+  // Populate JSON data for IMU1
+  JsonObject imu1 = jsonDoc.createNestedObject("IMU1");
+  JsonObject imu1Accel = imu1.createNestedObject("Accel");
+  imu1Accel["X"] = accelData1.accelX;
+  imu1Accel["Y"] = accelData1.accelY;
+  imu1Accel["Z"] = accelData1.accelZ;
 
-JsonObject imu1Gyro = imu1.createNestedObject("Gyro");
-imu1Gyro["X"] = gyroData1.gyroX;
-imu1Gyro["Y"] = gyroData1.gyroY;
-imu1Gyro["Z"] = gyroData1.gyroZ;
+  JsonObject imu1Gyro = imu1.createNestedObject("Gyro");
+  imu1Gyro["X"] = gyroData1.gyroX;
+  imu1Gyro["Y"] = gyroData1.gyroY;
+  imu1Gyro["Z"] = gyroData1.gyroZ;
 
-if (IMU1.hasMagnetometer()) {
-  JsonObject imu1Mag = imu1.createNestedObject("Mag");
-  imu1Mag["X"] = magData1.magX;
-  imu1Mag["Y"] = magData1.magY;
-  imu1Mag["Z"] = magData1.magZ;
+  if (IMU1.hasMagnetometer()) {
+    JsonObject imu1Mag = imu1.createNestedObject("Mag");
+    imu1Mag["X"] = magData1.magX;
+    imu1Mag["Y"] = magData1.magY;
+    imu1Mag["Z"] = magData1.magZ;
+  }
 }
-
-// Populate JSON data for IMU2
-JsonObject imu2 = jsonDoc.createNestedObject("IMU2");
-JsonObject imu2Accel = imu2.createNestedObject("Accel");
-imu2Accel["X"] = accelData2.accelX;
-imu2Accel["Y"] = accelData2.accelY;
-imu2Accel["Z"] = accelData2.accelZ;
-
-JsonObject imu2Gyro = imu2.createNestedObject("Gyro");
-imu2Gyro["X"] = gyroData2.gyroX;
-imu2Gyro["Y"] = gyroData2.gyroY;
-imu2Gyro["Z"] = gyroData2.gyroZ;
-
-if (IMU2.hasMagnetometer()) {
-  JsonObject imu2Mag = imu2.createNestedObject("Mag");
-  imu2Mag["X"] = magData2.magX;
-  imu2Mag["Y"] = magData2.magY;
-  imu2Mag["Z"] = magData2.magZ;
-}
-}
-
-// Serialize and print JSON data
 
 // WebSocket events
 void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
@@ -142,8 +108,6 @@ void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsE
   }
 }
 
-
-
 void setup() {
   Wire.begin();
   Wire.setClock(400000); // 400 kHz clock
@@ -158,23 +122,19 @@ void setup() {
     while (true);
   }
 
-  // Initialize IMU2
-  if (IMU2.init(calib2, IMU_ADDRESS2) != 0) {
-    Serial.println("Error initializing IMU2");
-    while (true);
-  }
-
 #ifdef PERFORM_CALIBRATION
   performCalibration(IMU1, calib1, "IMU1");
-  performCalibration(IMU2, calib2, "IMU2");
   digitalWrite(LED_PIN, HIGH);
 #endif
 
-//now for the wifi part
   // Setup Wi-Fi as Access Point
-  WiFi.softAP(ssid);
-  Serial.print("AP IP address: ");
-  Serial.println(WiFi.softAPIP());
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.print("Connected! IP address: ");
+  Serial.println(WiFi.localIP());
 
   // Setup WebSocket
   ws.onEvent(onWebSocketEvent);
@@ -186,7 +146,6 @@ void setup() {
   // Start the server
   server.begin();
   Serial.println("WebSocket server started!");
-
 }
 
 void performCalibration(MPU6500 &imu, calData &calib, const char *imuName) {
@@ -216,6 +175,6 @@ void loop() {
     updateSensorData();
     notifyClients();
     lastSensorUpdate = millis();
+  }
   delay(50); // Adjust delay as needed
-}
 }

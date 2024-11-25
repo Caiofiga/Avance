@@ -1,9 +1,8 @@
-opencv-python
+Flask
+flask_cors
+flask_socketio
+matplotlib
 mediapipe
 numpy
+scipy
 websockets
-websocket-client
-asyncio
-bokeh
-tornado
-flask

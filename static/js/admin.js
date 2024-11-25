@@ -22,6 +22,31 @@ document.querySelectorAll(".folder-title").forEach((folderTitle) => {
   });
 });
 
+async function fetchDevices() {
+  try {
+    const response = await fetch('http://localhost:5000/scan');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const devices = await response.json();
+    console.log(devices);
+
+    const deviceList = document.getElementById('deviceList');
+    deviceList.innerHTML = '';
+    
+    devices.forEach((device) => {
+      const div = document.createElement('div');
+      div.textContent = `Host: ${device.Host}, Name: ${device.Name}`;
+      deviceList.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Error fetching devices:', error);
+  }
+}
+
+
+fetchDevices();
+
 // Handle collapsible sections with animation
 document.querySelectorAll(".folder").forEach((folder) => {
   folder.addEventListener("click", function () {
