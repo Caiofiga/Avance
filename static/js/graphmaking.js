@@ -43,49 +43,69 @@ const plantGraph = new Dygraph(
   });
 
 let dataBuffer = [];
-  
   // Inline web worker creation
   const sensorWorkerCode = `
+    let socket;
     onmessage = function (e) {
-      let starttime = 0;
-      console.log("sensor Worker started and ready to connect");
-  
-      const socket = new WebSocket(
-        "ws://192.168.68.21:8765/"
-      );
-  
-      socket.onopen = function (e) {
-        console.log("WebSocket connected in sensor worker");
-      };
-  
-      socket.onerror = function (e) {
-        console.log("WebSocket error in sensor worker:", e);
-      };
-  
-      socket.onmessage = function (event) {
+      if (e.data.type === "start") {
+        let starttime = 0;
+        console.log("sensor Worker started and ready to connect");
+
+        socket = new WebSocket(e.data.url + "/ws");
+
+        socket.onopen = function (e) {
+          console.log("WebSocket connected in sensor worker");
+        };
+
+        socket.onerror = function (e) {
+          console.log("WebSocket error in sensor worker:", e);
+        };
+
+        socket.onmessage = function (event) {
         let message = JSON.parse(event.data);
-        let data = message.accel; // [x, y, z] values
+        let accelData = message.IMU.Accel; // {X, Y, Z} values
         let timestamp = message.timestamp;
-  
+
         if (starttime === 0) {
           starttime = timestamp;
         }
-  
+
         // Calculate elapsed time in seconds
-        let elapsedTime = timestamp
-        let workerresponse = { timestamp: elapsedTime, x: data[0], y: data[1], z: data[2] };
+        let elapsedTime = timestamp;
+        let workerresponse = { 
+          timestamp: elapsedTime, 
+          x: accelData.X, 
+          y: accelData.Y, 
+          z: accelData.Z 
+        };
         postMessage(workerresponse);
-      };
+        };
+      } else if (e.data.type === "stop") {
+        if (socket) {
+          socket.close();
+          console.log("WebSocket closed in sensor worker");
+        }
+      }
     };
   `;
-  
+
   // Create a blob URL from the worker code
   const sensorWorkerBlob = new Blob([sensorWorkerCode], { type: "application/javascript" });
   const sensorWorkerUrl = URL.createObjectURL(sensorWorkerBlob);
-  
+
   // Create the worker
   const sensorWorker = new Worker(sensorWorkerUrl);
-  sensorWorker.postMessage("Start");
+
+  // Function to start the worker with the WebSocket URL
+  function startSensorWorker(url) {
+    sensorWorker.postMessage({ type: "start", url: url });
+  }
+
+  // Function to stop the worker
+  function stopWorker() {
+    sensorWorker.postMessage({ type: "stop" });
+  }
+
   
 
     // shittyly calculated averages:

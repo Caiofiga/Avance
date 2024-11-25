@@ -22,30 +22,63 @@ document.querySelectorAll(".folder-title").forEach((folderTitle) => {
   });
 });
 
-async function fetchDevices() {
+async function fetchSSIDs() {
   try {
-    const response = await fetch('http://localhost:5000/scan');
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const devices = await response.json();
-    console.log(devices);
-
-    const deviceList = document.getElementById('deviceList');
-    deviceList.innerHTML = '';
-    
-    devices.forEach((device) => {
-      const div = document.createElement('div');
-      div.textContent = `Host: ${device.Host}, Name: ${device.Name}`;
-      deviceList.appendChild(div);
-    });
+      const response = await fetch(`/ssids`);
+      const data = await response.json();
+      const ssidList = document.getElementById('ssid-list');
+      ssidList.innerHTML = '';
+      data.ssids.forEach(ssid => {
+          const option = document.createElement('option');
+          option.value = ssid;
+          option.textContent = ssid;
+          ssidList.appendChild(option);
+      });
   } catch (error) {
-    console.error('Error fetching devices:', error);
+      console.error('Error fetching SSIDs:', error);
   }
 }
 
+function showWiFiFormModal() {
+  const ssidSelect = document.getElementById('ssid-list');
+  const selectedSSID = ssidSelect.value;
 
-fetchDevices();
+  if (selectedSSID) {
+      // Update the SSID field in the modal
+      document.getElementById('ssid').value = selectedSSID;
+
+      // Show the modal
+      const wifiModal = new bootstrap.Modal(document.getElementById('wifiModal'));
+      wifiModal.show();
+  }
+}
+
+$(document).ready(function () {
+  $('#wifiForm').on('submit', function (event) {
+      event.preventDefault(); // Prevent default form submission
+
+      const ssid = $('#ssid').val();
+      const password = $('#password').val();
+
+      // AJAX request
+      $.ajax({
+          url: '/connect',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ ssid, password }),
+          success: function (response) {
+          startSensorWorker(response.url) 
+
+          },
+          error: function (xhr, status, error) {
+              $('#message').text(`Error connecting to Wi-Fi: ${error}`).css('color', 'red');
+          }
+      });
+  });
+});
+
+// Fetch SSIDs on page load
+fetchSSIDs();
 
 // Handle collapsible sections with animation
 document.querySelectorAll(".folder").forEach((folder) => {

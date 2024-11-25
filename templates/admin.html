@@ -61,6 +61,11 @@
   </head>
   <body>
     <div class="container">
+      <label for="ssidSelect">Select SSID:</label>
+      <select id="ssid-list" class="form-select" required onchange="showWiFiFormModal()">
+      </select>
+
+
       <div class="accordion" id="accordionExample">
         <!-- Accordion Item 1 -->
         <div class="accordion-item">
@@ -205,9 +210,34 @@
         </div>
       </div>
     </div>
-    <div id='deviceList'>
-      <h3>Lista de Dispositivos</h3>
-    </div>
+
+
+    <!-- boostrap ssid modal-->
+
+    <div class="modal fade" id="wifiModal" tabindex="-1" aria-labelledby="wifiModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <form id="wifiForm">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="wifiModalLabel">Connect to WiFi</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <label for="ssid">Selected SSID:</label>
+                      <input type="text" id="ssid" class="form-control" readonly>
+                      <br>
+                      <label for="password">Enter Password:</label>
+                      <input type="password" id="password" class="form-control" required>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">Connect</button>
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
     <!-- jQuery Library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

@@ -16,10 +16,9 @@ from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 import secrets
 import base64
-import nmap
+from bleak import BleakClient, BleakScanner
+import platform
 import subprocess
-import socket
-import os
 
 # Preface: This is a fucking mess
 
@@ -397,70 +396,119 @@ cors = CORS(flaskapp)
 socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
+DEVICE_NAME = "ESP32"
+SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0"
+CHARACTERISTIC_UUID = "87654321-4321-6789-4321-fedcba987654"
+
+
+def get_ssids():
+    min_strength = 70
+    ssids = set()  # Use a set to avoid duplicates
+    try:
+        if platform.system() == "Linux":
+            result = subprocess.run(
+                ["nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi"], stdout=subprocess.PIPE)
+            lines = result.stdout.decode("utf-8").strip().split("\n")
+            for line in lines:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    ssid, signal = parts[0], int(parts[1])
+                    if signal >= min_strength:
+                        ssids.add(ssid)
+        elif platform.system() == "Windows":
+            result = subprocess.run(
+                ["netsh", "wlan", "show", "network", "mode=bssid"], stdout=subprocess.PIPE)
+            output = result.stdout.decode("utf-8")
+            current_ssid = None
+            for line in output.split("\n"):
+                if "SSID" in line and "BSSID" not in line:
+                    current_ssid = line.split(":")[1].strip()
+                elif "Signal" in line:
+                    strength = int(line.split(":")[1].strip().replace("%", ""))
+                    if current_ssid and strength >= min_strength:
+                        ssids.add(current_ssid)
+        elif platform.system() == "Darwin":  # macOS
+            result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"],
+                                    stdout=subprocess.PIPE)
+            lines = result.stdout.decode(
+                "utf-8").strip().split("\n")[1:]  # Skip header
+            for line in lines:
+                parts = line.split()
+                ssid = parts[0]
+                # Signal strength is typically near the end
+                strength = int(parts[-2])
+                if strength >= min_strength:
+                    ssids.add(ssid)
+    except Exception as e:
+        print(f"Error retrieving SSIDs: {e}")
+    return list(ssids)  # Convert set to list for JSON response
+
 # region website serving
 
 
-def get_local_subnet():
-    """
-    Detect the local subnet for the active network interface.
-    """
-    try:
-        if os.name == "posix":  # Linux/Mac
-            # Get the subnet using the `ip` command
-            result = subprocess.check_output(
-                "ip -o -f inet addr show | awk '/scope global/ {print $4}'", shell=True
-            )
-            subnet = result.decode().strip()
-        elif os.name == "nt":  # Windows
-            # Parse `ipconfig` output for IP and subnet mask
-            result = subprocess.check_output("ipconfig", shell=True)
-            subnet = None
-            for line in result.decode().splitlines():
-                if "IPv4" in line:
-                    local_ip = line.split(":")[1].strip()
-                if "Subnet Mask" in line:
-                    netmask = line.split(":")[1].strip()
-                    cidr = sum(bin(int(octet)).count("1")
-                               for octet in netmask.split("."))
-                    subnet = f"{local_ip}/{cidr}"
-            if not subnet:
-                raise ValueError("Could not determine subnet")
+async def sendDataToEsp(esp32, credentials):
+    ip_address = None  # Variable to store the IP address
+
+    async with BleakClient(esp32.address) as client:
+        print(f"Connected to {DEVICE_NAME}")
+
+        def notification_handler(sender, data):
+            nonlocal ip_address
+            ip_address = data.decode()  # Decode the notification data as the IP address
+            print(f"Notification from {sender}: {ip_address}")
+
+        # Start listening for notifications
+        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
+
+        # Send Wi-Fi credentials
+        await client.write_gatt_char(CHARACTERISTIC_UUID, credentials.encode())
+
+        # Wait dynamically for the IP address or timeout
+        for _ in range(20):  # 20 * 0.5s = 10 seconds max wait
+            if ip_address is not None:
+                break
+            await asyncio.sleep(0.5)
+
+        await client.stop_notify(CHARACTERISTIC_UUID)
+
+        if ip_address:
+            print(f"Received IP address: {ip_address}")
         else:
-            raise NotImplementedError("Unsupported OS")
-        print(f"Local subnet: {subnet}")  # Debugging line
-        return subnet
-    except Exception as e:
-        print(f"Error detecting subnet: {e}")
-        return None
+            print("Failed to receive IP address notification within timeout.")
+
+    return ip_address  # Return the IP address
 
 
-@flaskapp.route('/scan')
-def subnet_scan():
-    # Initialize the nmap scanner
-    nm = nmap.PortScanner()
+@flaskapp.route("/connect", methods=["POST"])
+def connect():
+    data = request.get_json()
+    print(data)
+    ssid = data.get('ssid')
+    password = data.get('password')
+    credentials = f'{ssid},{password}'
 
-    # Define the subnet you want to scan (e.g., 192.168.1.0/24)
-    subnet = get_local_subnet()
+    async def discover_and_connect():
+        devices = await BleakScanner.discover()
+        esp32 = next((d for d in devices if d.name == DEVICE_NAME), None)
+        if not esp32:
+            return {"message": "ESP32 not found"}, 404
 
-    # Scan the subnet
-    print(f"Scanning subnet {subnet}...")
-    # -sn: Ping scan to identify active hosts
-    nm.scan(hosts=subnet, arguments='-sn')
+        # Assuming sendDataToEsp is an async function
+        ip_addr = await sendDataToEsp(esp32, credentials)
+        return json.loads(ip_addr)
 
-    # Process and print the results
-    print("\nActive hosts:")
-    active_hosts = []
-    for host in nm.all_hosts():
-        print(nm)
-        if 'hostnames' in nm[host]:
-            hostnames = nm[host]['hostnames']
-            name = hostnames[0]['name'] if hostnames else "Unknown"
-            print(f"- {host} ({name})")
-            active_hosts.append({'Host': host, 'Name': name})
-        else:
-            print(f"- {host}")
-            active_hosts.append({'Host': host, 'Name': "Unknown"})
-    return jsonify(active_hosts)
+    # Run the async function synchronously in Flask
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(discover_and_connect())
+    return jsonify(result)
+
+
+@flaskapp.route("/ssids", methods=["GET"])
+def ssids():
+    # Get minimum strength from query params
+    ssid_list = get_ssids()
+    return jsonify({"ssids": ssid_list})
 
 
 @flaskapp.route('/admin')

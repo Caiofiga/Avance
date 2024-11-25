@@ -1,6 +1,9 @@
 #include "FastIMU.h"
 #include <Wire.h>
 #include <WiFi.h>
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
@@ -15,8 +18,12 @@ AccelData accelData1;       // Accelerometer data
 GyroData gyroData1;         // Gyroscope data
 MagData magData1;           // Magnetometer data
 
-const char* ssid = "Figa's iPhone 17 Pro Max";
-const char* password = "dallas99";
+BLEServer* bleServer = nullptr;
+BLECharacteristic* bleCharacteristic = nullptr;
+
+bool credentialsReceived = false;
+std::string receivedSSID;
+std::string receivedPassword;
 
 // Serial log buffer
 const size_t logBufferSize = 1024;
@@ -58,6 +65,20 @@ void notifyClients() {
   serializeJson(jsonDoc, output);
   ws.textAll(output);
 }
+
+// BLE characteristic callback to handle received data
+class WiFiProvisioningCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* characteristic) {
+    std::string value = characteristic->getValue();
+    int delimiterPos = value.find(",");
+    if (delimiterPos != std::string::npos) {
+      receivedSSID = value.substr(0, delimiterPos);
+      receivedPassword = value.substr(delimiterPos + 1);
+      credentialsReceived = true;
+      Serial.println("Wi-Fi credentials received via BLE.");
+    }
+  }
+};
 
 // Simulate sensor data
 void updateSensorData() {
@@ -127,14 +148,24 @@ void setup() {
   digitalWrite(LED_PIN, HIGH);
 #endif
 
-  // Setup Wi-Fi as Access Point
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.print("Connected! IP address: ");
-  Serial.println(WiFi.localIP());
+  // Initialize BLE for Wi-Fi provisioning
+  BLEDevice::init("ESP32");
+  bleServer = BLEDevice::createServer();
+  BLEService* bleService = bleServer->createService(BLEUUID("12345678-1234-5678-1234-56789abcdef0"));
+
+bleCharacteristic = bleService->createCharacteristic(
+    BLEUUID("87654321-4321-6789-4321-fedcba987654"),
+    BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY
+);
+
+
+  bleCharacteristic->setCallbacks(new WiFiProvisioningCallbacks());
+  bleService->start();
+
+  BLEAdvertising* advertising = BLEDevice::getAdvertising();
+  advertising->start();
+  Serial.println("BLE initialized. Waiting for Wi-Fi credentials...");
+
 
   // Setup WebSocket
   ws.onEvent(onWebSocketEvent);
@@ -171,6 +202,28 @@ void performCalibration(MPU6500 &imu, calData &calib, const char *imuName) {
 
 void loop() {
   static uint32_t lastSensorUpdate = 0;
+
+  // If credentials are received, connect to Wi-Fi
+  if (credentialsReceived) {
+    WiFi.begin(receivedSSID.c_str(), receivedPassword.c_str());
+    Serial.print("Connecting to Wi-Fi...");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(1000);
+      Serial.print(".");
+    }
+    Serial.println("\nConnected to Wi-Fi!");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    
+    // Notify client with the IP address
+    String ipAddress = WiFi.localIP().toString();
+    bleCharacteristic->setValue(ipAddress.c_str());
+    bleCharacteristic->notify();
+
+    credentialsReceived = false; // Reset the flag
+  }
+
+
   if (millis() - lastSensorUpdate > 1000) { // Update every 1 second
     updateSensorData();
     notifyClients();
