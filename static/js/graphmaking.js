@@ -51,7 +51,23 @@ let dataBuffer = [];
         let starttime = 0;
         console.log("sensor Worker started and ready to connect");
 
-        socket = new WebSocket(e.data.url + "/ws");
+      // Ensure the URL is a full WebSocket URL
+      let wsUrl;
+      try {
+        let url = e.data.url;
+        if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+          url = 'ws://' + url;
+        }
+        if (!url.endsWith('/ws')) {
+          url += '/ws';
+        }
+        wsUrl = new URL(url);
+      } catch (error) {
+        console.error("Invalid URL provided:", e.data.url);
+        return;
+      }
+      socket = new WebSocket(wsUrl.toString());
+
 
         socket.onopen = function (e) {
           console.log("WebSocket connected in sensor worker");
@@ -61,17 +77,17 @@ let dataBuffer = [];
           console.log("WebSocket error in sensor worker:", e);
         };
 
-        socket.onmessage = function (event) {
-        let message = JSON.parse(event.data);
-        let accelData = message.IMU.Accel; // {X, Y, Z} values
-        let timestamp = message.timestamp;
+      socket.onmessage = function (event) {
+      let message = JSON.parse(event.data);
+      let accelData = { X: message.accelX, Y: message.accelY, Z: message.accelZ }; // {X, Y, Z} values
+      let timestamp = message.timestamp;
 
-        if (starttime === 0) {
-          starttime = timestamp;
-        }
+      if (starttime === 0) {
+        starttime = Date.now();
+      }
+      // Generate a timestamp based on elapsed time
+      let elapsedTime = (Date.now() - starttime) / 1000; // Convert to seconds
 
-        // Calculate elapsed time in seconds
-        let elapsedTime = timestamp;
         let workerresponse = { 
           timestamp: elapsedTime, 
           x: accelData.X, 
@@ -105,6 +121,18 @@ let dataBuffer = [];
   function stopWorker() {
     sensorWorker.postMessage({ type: "stop" });
   }
+  document.addEventListener("DOMContentLoaded", function() {
+    // Attach the event handler after the DOM is fully loaded
+    document.getElementById("wifi-form").addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent the default form submission behavior
+  
+      // Get the value from the input field
+      let ip = document.getElementById("wifi-text").value;  
+      // Call your function with the IP
+      startSensorWorker(ip);
+    });
+  });
+  
 
   
 

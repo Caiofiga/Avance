@@ -1,133 +1,165 @@
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncWebSocket.h>
 #include "FastIMU.h"
 #include <Wire.h>
-#include <WiFi.h>
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <ArduinoJson.h>
+#include <IPAddress.h>
 
-#define IMU_ADDRESS1 0x68    // Address for the IMU
-#define PERFORM_CALIBRATION // Comment to disable startup calibration
-#define LED_PIN 2
+// Wi-Fi and WebSocket Configuration
+const char *apSSID = "ESP32_Setup";
+const char *apPassword = "12345678";
 
-MPU6500 IMU1;               // IMU instance
-calData calib1 = { 0 };     // Calibration data for IMU
-AccelData accelData1;       // Accelerometer data
-GyroData gyroData1;         // Gyroscope data
-MagData magData1;           // Magnetometer data
-
-BLEServer* bleServer = nullptr;
-BLECharacteristic* bleCharacteristic = nullptr;
-
-bool credentialsReceived = false;
-std::string receivedSSID;
-std::string receivedPassword;
-
-// Serial log buffer
-const size_t logBufferSize = 1024;
-char logBuffer[logBufferSize];
-size_t logWriteIndex = 0;
-
-StaticJsonDocument<512> jsonDoc;
-
-// WebSocket and server instances
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-// Function to store logs in the buffer
-void storeLog(const char* message) {
-  size_t len = strlen(message);
-  if (len > logBufferSize) return; // Ignore large messages
-  for (size_t i = 0; i < len; ++i) {
-    logBuffer[logWriteIndex] = message[i];
-    logWriteIndex = (logWriteIndex + 1) % logBufferSize;
-  }
-}
 
-// Function to broadcast serial logs
-void sendLogBuffer(AsyncWebSocketClient* client) {
-  String logs = "";
-  for (size_t i = 0; i < logBufferSize; ++i) {
-    logs += logBuffer[(logWriteIndex + i) % logBufferSize];
-  }
-  client->text(logs);
-}
+// IMU Configuration
+#define IMU_ADDRESS1 0x68 // Address for the IMU
+MPU6500 IMU1;             // IMU instance
+calData calib1 = {0};     // Calibration data for IMU
+AccelData accelData1;     // Accelerometer data
+GyroData gyroData1;       // Gyroscope data
+MagData magData1;         // Magnetometer data
 
-// Override Serial.print and Serial.println
-#define SerialPrint(x) { Serial.print(x); storeLog(x); }
-#define SerialPrintln(x) { Serial.println(x); storeLog((String(x) + "\n").c_str()); }
+// Wi-Fi Credential Storage
+bool credentialsReceived = false;
+String receivedSSID, receivedPassword;
 
-// Function to broadcast sensor data over WebSocket
-void notifyClients() {
-  String output;
-  serializeJson(jsonDoc, output);
-  ws.textAll(output);
-}
+#define LED_PIN 13
 
-// BLE characteristic callback to handle received data
-class WiFiProvisioningCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* characteristic) {
-    std::string value = characteristic->getValue();
-    int delimiterPos = value.find(",");
-    if (delimiterPos != std::string::npos) {
-      receivedSSID = value.substr(0, delimiterPos);
-      receivedPassword = value.substr(delimiterPos + 1);
+void WiFiEvent(WiFiEvent_t event) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_START:
+      Serial.println("Wi-Fi started. Attempting to connect...");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      Serial.println("Wi-Fi connected!");
       credentialsReceived = true;
-      Serial.println("Wi-Fi credentials received via BLE.");
-    }
-  }
-};
-
-// Simulate sensor data
-void updateSensorData() {
-  // Clear the JSON doc
-  jsonDoc.clear();
-
-  // Update IMU1
-  IMU1.update();
-  IMU1.getAccel(&accelData1);
-  IMU1.getGyro(&gyroData1);
-  if (IMU1.hasMagnetometer()) IMU1.getMag(&magData1);
-
-  // Populate JSON data for IMU1
-  JsonObject imu1 = jsonDoc.createNestedObject("IMU1");
-  JsonObject imu1Accel = imu1.createNestedObject("Accel");
-  imu1Accel["X"] = accelData1.accelX;
-  imu1Accel["Y"] = accelData1.accelY;
-  imu1Accel["Z"] = accelData1.accelZ;
-
-  JsonObject imu1Gyro = imu1.createNestedObject("Gyro");
-  imu1Gyro["X"] = gyroData1.gyroX;
-  imu1Gyro["Y"] = gyroData1.gyroY;
-  imu1Gyro["Z"] = gyroData1.gyroZ;
-
-  if (IMU1.hasMagnetometer()) {
-    JsonObject imu1Mag = imu1.createNestedObject("Mag");
-    imu1Mag["X"] = magData1.magX;
-    imu1Mag["Y"] = magData1.magY;
-    imu1Mag["Z"] = magData1.magZ;
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      Serial.println("Connected to Wi-Fi!");
+      Serial.println("IP address: " + WiFi.localIP().toString());
+      ws.onEvent(onEvent);
+      server.addHandler(&ws);
+      credentialsReceived = true;
+      digitalWrite(LED_PIN, HIGH);
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      Serial.println("Wi-Fi disconnected. Reconnecting...");
+      credentialsReceived = false;
+      WiFi.reconnect();
+      break;
+    default:
+      break;
   }
 }
 
-// WebSocket events
-void onWebSocketEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
-  if (type == WS_EVT_CONNECT) {
-    SerialPrintln("WebSocket client connected");
-    client->ping();
-  } else if (type == WS_EVT_DISCONNECT) {
-    SerialPrintln("WebSocket client disconnected");
-  } else if (type == WS_EVT_DATA) {
-    String message = String((char*)data).substring(0, len);
-    if (message == "getLogs") {
-      sendLogBuffer(client);
-    } else if (message == "reset") {
-      SerialPrintln("Reset command received!");
-      ESP.restart();
-    }
+void connectToWiFi() {
+  WiFi.onEvent(WiFiEvent);
+  WiFi.disconnect(true); // Ensure we're starting fresh
+  WiFi.begin(receivedSSID.c_str(), receivedPassword.c_str());
+  Serial.println("Connecting to Wi-Fi...");
+}
+
+// WebSocket Event Handler
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.printf("WebSocket client #%u connected\n", client->id());
+      client->text("Welcome to the WebSocket server!");
+      break;
+    case WS_EVT_DISCONNECT:
+      Serial.printf("WebSocket client #%u disconnected\n", client->id());
+      break;
+    case WS_EVT_DATA:
+      break; // We are not handling incoming data for now
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+      break;
   }
 }
+
+void handleRoot(AsyncWebServerRequest *request) {
+  String html = "<html>"
+                "<head><title>Wi-Fi Setup</title></head>"
+                "<body>"
+                "<h1>Enter Wi-Fi Credentials</h1>"
+                "<form action=\"/submit\" method=\"POST\">"
+                "SSID: <input type=\"text\" name=\"ssid\"><br>"
+                "Password: <input type=\"password\" name=\"password\"><br>"
+                "<input type=\"submit\" value=\"Submit\">"
+                "</form>"
+                "<p>WebSocket server address: ws://" + WiFi.softAPIP().toString() + "/ws</p>"
+                "</body></html>";
+  request->send(200, "text/html", html);
+}
+
+void handleStatus(AsyncWebServerRequest *request) {
+  String html = "<html>"
+                "<head><title>Wi-Fi Status</title></head>"
+                "<body>"
+                "<h1>Wi-Fi Status</h1>";
+
+  if (WiFi.status() == WL_CONNECTED) {
+    html += "<p>Connected to Wi-Fi!</p>";
+    html += "<p>Device IP Address: " + WiFi.localIP().toString() + "</p>";
+    html += "<p>WebSocket Server: ws://" + WiFi.localIP().toString() + "/ws</p>";
+  } else {
+    html += "<p>Not connected to Wi-Fi.</p>";
+  }
+
+  html += "</body></html>";
+  request->send(200, "text/html", html);
+}
+
+void handleSubmit(AsyncWebServerRequest *request) {
+  if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
+    receivedSSID = request->getParam("ssid", true)->value();
+    receivedPassword = request->getParam("password", true)->value();
+    connectToWiFi();
+    // Show a connecting page
+    request->redirect("/connecting");
+  } else {
+    request->send(400, "text/plain", "Missing SSID or password.");
+  }
+}
+
+void handleConnecting(AsyncWebServerRequest *request) {
+  String html = "<html>"
+                "<head>"
+                "<title>Connecting...</title>"
+                "</head>"
+                "<body>"
+                "<h1>Connecting to Wi-Fi...</h1>"
+                "<p>Please wait while we connect to the network.</p>"
+                "<script>"
+                "setInterval(function() {"
+                "  fetch('/wifi-status')"
+                "    .then(response => response.json())"
+                "    .then(data => {"
+                "      if (data.connected) {"
+                "        window.location.href = '/status';"
+                "      }"
+                "    });"
+                "}, 5000);"
+                "</script>"
+                "</body>"
+                "</html>";
+  request->send(200, "text/html", html);
+}
+
+void handleWiFiStatus(AsyncWebServerRequest *request) {
+  String json = "{\"connected\":";
+  if (WiFi.status() == WL_CONNECTED) {
+    json += "true";
+  } else {
+    json += "false";
+  }
+  json += "}";
+  Serial.println(json);
+  request->send(200, "application/json", json);
+}
+
 
 void setup() {
   Wire.begin();
@@ -135,99 +167,64 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT); // Initialize LED pin
   digitalWrite(LED_PIN, LOW); // Turn off LED initially
-  while (!Serial);
 
   // Initialize IMU1
   if (IMU1.init(calib1, IMU_ADDRESS1) != 0) {
     Serial.println("Error initializing IMU1");
-    while (true);
+    while (true); // Halt execution if initialization fails
   }
 
-#ifdef PERFORM_CALIBRATION
-  performCalibration(IMU1, calib1, "IMU1");
-  digitalWrite(LED_PIN, HIGH);
-#endif
+  // Start the SoftAP
+  WiFi.softAP(apSSID, apPassword);
+  Serial.println("SoftAP started");
+  Serial.println("IP address: " + WiFi.softAPIP().toString());
 
-  // Initialize BLE for Wi-Fi provisioning
-  BLEDevice::init("ESP32");
-  bleServer = BLEDevice::createServer();
-  BLEService* bleService = bleServer->createService(BLEUUID("12345678-1234-5678-1234-56789abcdef0"));
+  // Configure AsyncWebServer routes
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/submit", HTTP_POST, handleSubmit);
+  server.on("/connecting", HTTP_GET, handleConnecting);
+  server.on("/wifi-status", HTTP_GET, handleWiFiStatus);
+  server.on("/status", HTTP_GET, handleStatus);
 
-bleCharacteristic = bleService->createCharacteristic(
-    BLEUUID("87654321-4321-6789-4321-fedcba987654"),
-    BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY
-);
-
-
-  bleCharacteristic->setCallbacks(new WiFiProvisioningCallbacks());
-  bleService->start();
-
-  BLEAdvertising* advertising = BLEDevice::getAdvertising();
-  advertising->start();
-  Serial.println("BLE initialized. Waiting for Wi-Fi credentials...");
-
-
-  // Setup WebSocket
-  ws.onEvent(onWebSocketEvent);
-  server.addHandler(&ws);
-
-  // Allow CORS for all endpoints
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-
-  // Start the server
   server.begin();
-  Serial.println("WebSocket server started!");
+  Serial.println("Web server started");
+
+
 }
 
-void performCalibration(MPU6500 &imu, calData &calib, const char *imuName) {
-  Serial.print(imuName);
-  Serial.println(" calibration & data example");
-
-  if (imu.hasMagnetometer()) {
-    delay(1000);
-    Serial.println("Move IMU in figure 8 pattern until done.");
-    delay(3000);
-    imu.calibrateMag(&calib);
-    Serial.println("Magnetic calibration done!");
-  } else {
-    delay(5000);
-  }
-
-  delay(5000);
-  Serial.println("Keep IMU level.");
-  delay(5000);
-  imu.calibrateAccelGyro(&calib);
-  Serial.println("Calibration done!");
-}
 
 void loop() {
-  static uint32_t lastSensorUpdate = 0;
 
-  // If credentials are received, connect to Wi-Fi
-  if (credentialsReceived) {
-    WiFi.begin(receivedSSID.c_str(), receivedPassword.c_str());
-    Serial.print("Connecting to Wi-Fi...");
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);
-      Serial.print(".");
-    }
-    Serial.println("\nConnected to Wi-Fi!");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    
-    // Notify client with the IP address
-    String ipAddress = WiFi.localIP().toString();
-    bleCharacteristic->setValue(ipAddress.c_str());
-    bleCharacteristic->notify();
+  if (!credentialsReceived){
+    return;
+  }
+  // Update IMU data
+  IMU1.update();
+  IMU1.getAccel(&accelData1);
+  IMU1.getGyro(&gyroData1);
 
-    credentialsReceived = false; // Reset the flag
+  // Create JSON message with IMU data
+  String imuData = "{";
+  imuData += "\"accelX\":" + String(accelData1.accelX, 2) + ",";
+  imuData += "\"accelY\":" + String(accelData1.accelY, 2) + ",";
+  imuData += "\"accelZ\":" + String(accelData1.accelZ, 2) + ",";
+  imuData += "\"gyroX\":" + String(gyroData1.gyroX, 2) + ",";
+  imuData += "\"gyroY\":" + String(gyroData1.gyroY, 2) + ",";
+  imuData += "\"gyroZ\":" + String(gyroData1.gyroZ, 2);
+
+  if (IMU1.hasMagnetometer()) {
+    IMU1.getMag(&magData1);
+    imuData += ",";
+    imuData += "\"magX\":" + String(magData1.magX, 2) + ",";
+    imuData += "\"magY\":" + String(magData1.magY, 2) + ",";
+    imuData += "\"magZ\":" + String(magData1.magZ, 2);
   }
 
+  imuData += "}";
 
-  if (millis() - lastSensorUpdate > 1000) { // Update every 1 second
-    updateSensorData();
-    notifyClients();
-    lastSensorUpdate = millis();
-  }
-  delay(50); // Adjust delay as needed
+  // Send data to all connected WebSocket clients
+  ws.textAll(imuData);
+
+  // Delay before next update
+  delay(1000);
 }
