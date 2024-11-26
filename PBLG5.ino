@@ -9,14 +9,9 @@
 const char *apSSID = "ESP32_Setup";
 const char *apPassword = "12345678";
 
-const char *staSSID = "MARIA CLARA’s iPhone";
-const char *staPassword = "02052005";
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-IPAddress local_IP(192, 168, 135, 131); // Static IP address
-IPAddress gateway(192, 168, 135, 1);    // Gateway address
-IPAddress subnet(255, 255, 255, 0);   // Subnet mask
 
 // IMU Configuration
 #define IMU_ADDRESS1 0x68 // Address for the IMU
@@ -94,7 +89,26 @@ void handleRoot(AsyncWebServerRequest *request) {
                 "Password: <input type=\"password\" name=\"password\"><br>"
                 "<input type=\"submit\" value=\"Submit\">"
                 "</form>"
+                "<p>WebSocket server address: ws://" + WiFi.softAPIP().toString() + "/ws</p>"
                 "</body></html>";
+  request->send(200, "text/html", html);
+}
+
+void handleStatus(AsyncWebServerRequest *request) {
+  String html = "<html>"
+                "<head><title>Wi-Fi Status</title></head>"
+                "<body>"
+                "<h1>Wi-Fi Status</h1>";
+
+  if (WiFi.status() == WL_CONNECTED) {
+    html += "<p>Connected to Wi-Fi!</p>";
+    html += "<p>Device IP Address: " + WiFi.localIP().toString() + "</p>";
+    html += "<p>WebSocket Server: ws://" + WiFi.localIP().toString() + "/ws</p>";
+  } else {
+    html += "<p>Not connected to Wi-Fi.</p>";
+  }
+
+  html += "</body></html>";
   request->send(200, "text/html", html);
 }
 
@@ -103,11 +117,49 @@ void handleSubmit(AsyncWebServerRequest *request) {
     receivedSSID = request->getParam("ssid", true)->value();
     receivedPassword = request->getParam("password", true)->value();
     connectToWiFi();
-    request->send(200, "text/plain", "Connection Success! IP: " + WiFi.localIP().toString());
+    // Show a connecting page
+    request->redirect("/connecting");
   } else {
     request->send(400, "text/plain", "Missing SSID or password.");
   }
 }
+
+void handleConnecting(AsyncWebServerRequest *request) {
+  String html = "<html>"
+                "<head>"
+                "<title>Connecting...</title>"
+                "</head>"
+                "<body>"
+                "<h1>Connecting to Wi-Fi...</h1>"
+                "<p>Please wait while we connect to the network.</p>"
+                "<script>"
+                "setInterval(function() {"
+                "  fetch('/wifi-status')"
+                "    .then(response => response.json())"
+                "    .then(data => {"
+                "      if (data.connected) {"
+                "        window.location.href = '/status';"
+                "      }"
+                "    });"
+                "}, 5000);"
+                "</script>"
+                "</body>"
+                "</html>";
+  request->send(200, "text/html", html);
+}
+
+void handleWiFiStatus(AsyncWebServerRequest *request) {
+  String json = "{\"connected\":";
+  if (WiFi.status() == WL_CONNECTED) {
+    json += "true";
+  } else {
+    json += "false";
+  }
+  json += "}";
+  Serial.println(json);
+  request->send(200, "application/json", json);
+}
+
 
 void setup() {
   Wire.begin();
@@ -130,6 +182,9 @@ void setup() {
   // Configure AsyncWebServer routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/submit", HTTP_POST, handleSubmit);
+  server.on("/connecting", HTTP_GET, handleConnecting);
+  server.on("/wifi-status", HTTP_GET, handleWiFiStatus);
+  server.on("/status", HTTP_GET, handleStatus);
 
   server.begin();
   Serial.println("Web server started");
