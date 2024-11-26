@@ -29,7 +29,7 @@ let anchors = [
 let ball = {
     x: anchors[level].x,
     y:anchors[level].y,
-    radius: 20,
+    radius: 40,
     vx: 0,
     vy: 0,
     isDragging: false,
@@ -51,7 +51,7 @@ let objectives = anchors.map((anchor, index) => ({
 let obj_marker = {
     x: objectives[level].x,
     y: objectives[level].y,
-    radius: 10
+    radius: 15
 }
 
 
@@ -130,26 +130,43 @@ class Obstacle {
         this.height = height;
     }
 
-    drawctx() {
+    drawctx(change_size = false, width = this.width, height = this.height) {
+        const imageToDraw = garrafa1; // Selecionar a imagem atual
+        
+        let scaledWidth, scaledHeight;
+        
+        const scalex = gameCanvas.width / 1920 // Escala horizontal
+        const scaley = gameCanvas.height / 1080 // Escala vertical
+    
+        if (change_size) {
+            // Usar os tamanhos personalizados passados como argumentos
+            scaledWidth = width * scalex;
+            scaledHeight = height * scaley;
+        } 
+        else {
+            // Calcular a escala automaticamente com base no tamanho da tela
+
+    
+            scaledWidth = imageToDraw.naturalWidth * scalex;
+            scaledHeight = imageToDraw.naturalHeight * scaley;
+        }
+    
+        console.log(`Width: ${scaledWidth}, Height: ${scaledHeight}`);
         ctx.fillStyle = 'transparent';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-            // Draw the scaled slingshot image with the base aligned
-    const scalex = gameCanvas.width/1920
-    const scaley = gameCanvas.height/1080
-    let scaledWidth = garrafa1.width * scalex;
-    let scaledHeight = garrafa1.height * scaley;
-
-    ctx.drawImage(
-        garrafa1, 
-        this.x, // Center the image horizontally
-        this.y,    // Position the base at the anchor point
-        scaledWidth, 
-        scaledHeight
-    );
-
-
+        ctx.fillRect(this.x, this.y, scaledWidth, scaledHeight);
+    
+        // Desenhar a imagem com os tamanhos calculados
+        ctx.drawImage(
+            imageToDraw,
+            this.x, // Posição X
+            this.y, // Posição Y
+            scaledWidth, 
+            scaledHeight
+        );
     }
-
+    
+    
+    
     broadPhaseCheck(ball) {
         const distanceThreshold = 100;
         const dx = ball.x - (this.x + this.width / 2);
@@ -196,42 +213,58 @@ class Obstacle {
                 const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
                 const x = rect.left + this.x + this.width / 2;
                 const y = rect.top + this.y + this.height / 2;
-                console.log(this.x + " " + this.y)
                 showgarrafa5(x, y);
+                
+                
             }
         }
     }
 }
 
+
+
 function showgarrafa5() {
     // Substituir a imagem da garrafa1 pela garrafa5
     garrafa1.src = '../static/img/garrafa5.png';
 
+
     // Garantir que a nova imagem seja carregada antes de desenhar
     garrafa1.onload = () => {
-        console.log("Imagem alterada para garrafa5");
-        redrawObstacles(); // Redesenhar os obstáculos para refletir a mudança
+        redrawObstacles(customWidth, customHeight); // Redesenhar os obstáculos para refletir a mudança
     };
 }
 
-function redrawObstacles() {
+function redrawObstacles(width, height) {
     // Redesenhar os obstáculos com a nova imagem
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar o canvas
-    drawObstacles(); // Chamar a função para redesenhar os obstáculos
+    drawObstacles( true); // Chamar a função para redesenhar os obstáculos
+    if (garrafa1.src.includes("garrafa1.png")) 
+        console.log("Collision with garrafa1 detected!"); // Log para verificar a colisão
+        handleGameWin();    
 }
 
-function handleNextLevel(){
+function handleNextLevel() {
+    console.log("Advancing to the next level...");
+
+    // Limpar o canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    level ++;
-    isLaunched = false;
+
+    // Incrementar o nível
+    level++;
+
+    // Se o nível exceder o total de níveis, acione a vitória
     if (level >= anchors.length) {
-        level = 0;
+        console.log("All levels completed!");
+        handleGameWin();
+        return; // Sair para evitar redefinir o jogo
     }
+
+    // Configurar o próximo nível
     anchor = anchors[level];
     ball = {
         x: anchor.x,
         y: anchor.y,
-        radius: 20,
+        radius: 40, // Tamanho da bola
         vx: 0,
         vy: 0,
         isDragging: false,
@@ -241,11 +274,11 @@ function handleNextLevel(){
     obj_marker = {
         x: objectives[level].x,
         y: objectives[level].y,
-        radius: 10
-    }
-    obj_timer = 3.0;
-    
-    addObstacle(levelobstacles[level].x, levelobstacles[level].y, levelobstacles[level].w, levelobstacles[level].h)
+        radius: 15
+    };
+
+    // Redefinir variáveis do nível
+    isLaunched = false;
     parabola = null;
     anchorpath = null;
     anchorlaunchtime = 0;
@@ -253,38 +286,39 @@ function handleNextLevel(){
     parabolalaunchtime = 0;
     parabolaflighttime = 0;
     reachedObstacle = false;
-    max_dist = distances[level] + 100;
+
+    max_dist = distances[level] + 100; // Ajustar a distância máxima para o novo nível
     max_distx = max_dist * Math.cos(Math.PI / 4);
     max_disty = max_dist * Math.sin(Math.PI / 4);
+    obj_timer = 3.0;
+
+    // Adicionar obstáculos do próximo nível
+    obstacles = []; // Limpar obstáculos existentes
+    addObstacle(
+        levelobstacles[level].x,
+        levelobstacles[level].y,
+        levelobstacles[level].w,
+        levelobstacles[level].h
+    );
+
+    // Reiniciar o estado do jogo
     playing = true;
-    
 
+    console.log(`Level ${level} initialized.`);
+    if (isBallInObjective(ball, obj_marker)) {
+        console.log(`Objective reached for level ${level}`);
+        handleNextLevel(); // Avançar para o próximo nível
+
+    }
+    if (isBallInObjective(ball, obj_marker)) {
+    console.log(`Objective reached for level ${level}`);
+    handleNextLevel(); // Avançar para o próximo nível
+}
 
 }
 
-function handleGameWin(){
-    playing = false;
-    let data = JSON.stringify(
-        { data:{
-            type: 'bird',
-            level: level,
-            completed: level >= (anchors.length -1),
-            time: gametime
-        }
-        }
-    )
-    sendData(data)
-    gametime = 0;
-    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
-    myModal.show();
-    myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
-    setTimeout(() => {
-        startFireworks(document.getElementById('modal-text'));
-        StartConfetti();
-    }, 4500);
 
 
-}
 
 export function lockModal(angle) {
     const closemodalbutton = document.getElementById('closemodalbutton');
@@ -309,13 +343,28 @@ let levelobstacles = [
 {x: 800, y: 50, w: 50, h: 50}
 ];
 
+let changed_size =false;
+// Definir o tamanho desejado
+const customWidth = 400;  // Substitua pelo tamanho desejado
+const customHeight = 200;
 
-function drawObstacles() {
-    for (let obstacle of obstacles) {
-        obstacle.drawctx();
-        obstacle.checkcollision(ball);  // Check collision during each frame
+function drawObstacles(change ) {
+    let obstacle = obstacles[level];
+    if (change){ //this is probabily a shitty solution
+        changed_size = true;
+    } 
+    if (changed_size){
+        obstacle.drawctx(true, customWidth, customHeight);
     }
+    else{
+        obstacle.drawctx(false);
+
+    }
+        
+    obstacle.checkcollision(ball); // Check collision during each frame
+    
 }
+
 
 function addObstacle(x,y,w,h) {
     let obstacle = new Obstacle(x, canvas.height - y, w, h);
@@ -328,6 +377,7 @@ function isBallInObjective(ball, obj_marker) {
     const dy = ball.y - obj_marker.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     return distance <= ball.radius + obj_marker.radius;
+    
 }
 
 let obj_timer = 3.0;
@@ -348,7 +398,6 @@ function animate() {
 
     if (playing) gametime += deltaTime;
 
-
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -357,7 +406,7 @@ function animate() {
         ctx.beginPath();
         ctx.moveTo(anchor.x, anchor.y);
         ctx.lineTo(ball.x, ball.y);
-        ctx.strokeStyle = 'brown';
+        ctx.strokeStyle = 'transparent';
         ctx.lineWidth = 4;
         ctx.stroke();
     }
@@ -371,13 +420,11 @@ function animate() {
     let distanceToAnchor = Math.abs(anchor.y - canvas.height); // Distance from the anchor to the floor
     let scale = distanceToAnchor / slingshotHeight;
 
-
     // Save the context state
     ctx.save();
 
     // Move to the anchor point and rotate
     ctx.translate(anchor.x, anchor.y);
-
 
     // Draw the scaled slingshot image with the base aligned
     let scaledWidth = slingshotImage.width * scale;
@@ -386,7 +433,7 @@ function animate() {
     ctx.drawImage(
         slingshotImage, 
         -scaledWidth / 2, // Center the image horizontally
-        -scaledHeight /10,    // Position the base at the anchor point
+        -scaledHeight / 10, // Position the base at the anchor point
         scaledWidth, 
         scaledHeight
     );
@@ -401,30 +448,31 @@ function animate() {
         totalframetime -= (1000 / 60); // Decrease the accumulated time by the amount needed for the next physics update
     }
 
-    if (ball.visible){ //only draw the ball if it is visible
-    let ballImage = new Image();
-    ballImage.src = '../static/img/ball.png';
-    // Draw the ball
-    ctx.drawImage(ballImage, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
-    // Draw the objective marker
-    ctx.beginPath();
-    ctx.arc(obj_marker.x, obj_marker.y, obj_marker.radius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'red';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    if (ball.visible) { // Only draw the ball if it is visible
+        let ballImage = new Image();
+        ballImage.src = '../static/img/ball.png';
+        // Draw the ball
+        ctx.drawImage(ballImage, ball.x - ball.radius, ball.y - ball.radius, ball.radius * 2, ball.radius * 2);
+        // Draw the objective marker
+        ctx.beginPath();
+        ctx.arc(obj_marker.x, obj_marker.y, obj_marker.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
 
-    // Draw obstacles (for collision detection)
-    drawObstacles();
+    // Draw obstacles with custom sizes
+    drawObstacles(); // Passar os tamanhos personalizados aqui
 
     if (isBallInObjective(ball, obj_marker)) {
-        obj_timer -= 0.01
-        console.log("counting Down!")
+        obj_timer -= 0.01;
+        console.log("counting Down!");
         if (obj_timer <= 0) {
             resetLastAngle();
             releaseBall();
         }
     }
+
     // Request the next frame
     requestAnimationFrame(animate);
 }
@@ -453,7 +501,6 @@ function updatePhysics(){
         if (t >= 1) reachedObstacle = true;
     }
 
-    
 
     // Collision detection with ground
     if (ball.y + ball.radius > canvas.height) {
@@ -505,4 +552,76 @@ function resizeCanvas() {
 // Initial resize
 resizeCanvas();
 
-// Adjust canvas size on window resize
+// Adicionar evento ao botão "Finalizar Jogo"
+document.getElementById("endButton").addEventListener("click", () => {
+    endGame(); // Finalizar o jogo manualmente
+});
+
+function endGame() {
+    // Parar o temporizador
+    clearInterval(timeinterval);
+
+    // Remover o evento de sobreposição
+    wateringcan.removeEventListener('overlap', handleOverlap);
+
+    // Coletar dados do buffer e registrar informações
+    let points = permabuffer.map((point) => {
+        return { time: point[0], x: point[1], y: point[2], z: point[3] };
+    });
+
+    // Enviar dados ao backend via AJAX
+    $.ajax({
+        type: "POST",
+        url: "/save_score",
+        data: JSON.stringify({
+            name: 'name', // Nome do jogador (ajuste conforme necessário)
+            score: time.toFixed(1),
+            game: "estilingue",
+            graph: points,
+            overlaps: overlaptimes
+        }),
+        contentType: "application/json",
+        success: function (data) {
+            console.log('Game data saved successfully:', data);
+        },
+        error: function (err) {
+            console.error('Error saving game data:', err);
+        }
+    });
+
+    // Mostrar modal ou mensagem de conclusão
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+    myModal.show();
+}
+
+function handleGameWin(){
+    if (document.getElementById("startScreen").style.display == "none"){
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+        myModal.show();
+        setTimeout(() => {
+            startFireworks(document.getElementById('modal-text'));
+            StartConfetti();
+        }, 4500);
+        clearInterval(timeinterval);
+        wateringcan.removeEventListener('overlap', handleOverlap);
+        //need to stop the graph from updating
+        let points = permabuffer.map((point) => { // this is a dict of all the points in permabuffer
+            return { time: point[0], x: point[1], y: point[2], z: point[3] };
+        }); //pass this through AJAX to the backend]
+        $.ajax({
+            type: "POST",
+            url: "/save_score",
+            data: JSON.stringify({
+                name: 'name',
+                score: time.toFixed(1),
+                game: "estilingue",
+                graph: points,
+                overlaps: overlaptimes
+            }),
+            contentType: "application/json",
+            success: function(data){
+                console.log(data);
+            }
+        });
+        
+ }}

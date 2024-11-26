@@ -1,7 +1,7 @@
 import { permabuffer, sendData } from './webhooks-regador.js';
 
 function moveDiv(value){    
-    let sensitivity = 0.2;
+    let sensitivity = 0.4;
     let div = document.getElementById("movable");
      let plant1pos = document.getElementById("plant1").getBoundingClientRect();
      let plant5pos = document.getElementById("plant5").getBoundingClientRect();
@@ -44,7 +44,7 @@ document.getElementById("startButton").addEventListener("click", () => {
     wateringcan.addEventListener('overlap', handleOverlap);
 
     function increaseTime(){
-        time += 0.2;
+        time += 0.1;
     }
     timeinterval = setInterval(increaseTime, 100);
     let data = JSON.stringify(
@@ -54,7 +54,6 @@ document.getElementById("startButton").addEventListener("click", () => {
         }
         }
     )
-    
     sendData(data);
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("video_feed").style.display = "flex";
@@ -62,9 +61,7 @@ document.getElementById("startButton").addEventListener("click", () => {
 
     playing = true;
   });
-
  let overlaptimes = {}; //we will use this to pass the time of overlap to the backend
- let completedplants = [];
  function handleOverlap(event) {
      const plant = document.getElementById(event.detail.plantId);
      if(plant.dataset.watertime >= parseFloat(0)){
@@ -87,21 +84,17 @@ document.getElementById("startButton").addEventListener("click", () => {
              plant.src = window.static_folder[0.0];
              plant.dataset.completed = "true";
             overlaptimes[plant.id].push(time + ' end')
-            
 
             let plantIdNumber = plant.id.match(/\d+/)[0]; // Extract the number from the plant id
-            completedplants.push(plantIdNumber);
             let data = JSON.stringify(
                 { data:{
                     type: "plant",
                     plant: plantIdNumber,
                     status: "completed",
-                    time: time, 
-                    completed: completedplants.length >= 5
+                    time: time
                 }
                 }
             )
-            console.log(time);
             sendData(data)
          }
      }
@@ -116,7 +109,6 @@ document.getElementById("startButton").addEventListener("click", () => {
         handleGameWin();
      }
  }
-
  // Adicionar evento ao botão "Finalizar Jogo"
 document.getElementById("endButton").addEventListener("click", () => {
     endGame(); // Finalizar o jogo manualmente
@@ -158,7 +150,6 @@ function endGame() {
     const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
     myModal.show();
 }
-
  
  function handleGameWin(){
     if (document.getElementById("startScreen").style.display == "none"){
@@ -189,5 +180,4 @@ function endGame() {
                 console.log(data);
             }
         });
-        
  }}
