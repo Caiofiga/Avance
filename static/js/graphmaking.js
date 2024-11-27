@@ -140,6 +140,10 @@ let dataBuffer = [];
       return x > thresholds[0] || y > thresholds[1] || z > thresholds[2];
     }
 
+
+    let plantGraphEnabled = true;
+let angleGraphEnabled = true;
+
   // Handle messages from the worker
   sensorWorker.onmessage = function (e) {
     let timestamp = e.data.timestamp;
@@ -167,15 +171,26 @@ let dataBuffer = [];
 
       dataBuffer.shift();
     }
+
+        // Update only if the graph is enabled
+        if (plantGraphEnabled) {
+          plantGraph.updateOptions({ file: dataBuffer });
+      }
+      if (angleGraphEnabled) {
+          angleGraph.updateOptions({ file: dataBuffer });
+      }
   
     }
     // Update the Dygraph with the new data
 
-  function toggleGraph(graph, enable){
-     if (enable) graph.updateOptions({ file: dataBuffer });
-     else graph.updateOptions({ file: null });
-     console.log(graph);
-  } 
+// Toggling graph enable/disable
+function toggleGraph(graph, enable) {
+  if (graph === plantGraph) {
+      plantGraphEnabled = enable;
+  } else if (graph === angleGraph) {
+      angleGraphEnabled = enable;
+  }
+}
 
   function ExportGraph() {
 
