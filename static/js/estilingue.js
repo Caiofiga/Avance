@@ -243,28 +243,18 @@ function redrawObstacles(width, height) {
         handleGameWin();    
 }
 
-function handleNextLevel() {
-    console.log("Advancing to the next level...");
-
-    // Limpar o canvas
+function handleNextLevel(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Incrementar o nível
-    level++;
-
-    // Se o nível exceder o total de níveis, acione a vitória
+    level ++;
+    isLaunched = false;
     if (level >= anchors.length) {
-        console.log("All levels completed!");
-        handleGameWin();
-        return; // Sair para evitar redefinir o jogo
+        level = 0;
     }
-
-    // Configurar o próximo nível
     anchor = anchors[level];
     ball = {
         x: anchor.x,
         y: anchor.y,
-        radius: 40, // Tamanho da bola
+        radius: 20,
         vx: 0,
         vy: 0,
         isDragging: false,
@@ -274,11 +264,11 @@ function handleNextLevel() {
     obj_marker = {
         x: objectives[level].x,
         y: objectives[level].y,
-        radius: 15
-    };
-
-    // Redefinir variáveis do nível
-    isLaunched = false;
+        radius: 10
+    }
+    obj_timer = 3.0;
+    
+    addObstacle(levelobstacles[level].x, levelobstacles[level].y, levelobstacles[level].w, levelobstacles[level].h)
     parabola = null;
     anchorpath = null;
     anchorlaunchtime = 0;
@@ -286,38 +276,38 @@ function handleNextLevel() {
     parabolalaunchtime = 0;
     parabolaflighttime = 0;
     reachedObstacle = false;
-
-    max_dist = distances[level] + 100; // Ajustar a distância máxima para o novo nível
+    max_dist = distances[level] + 100;
     max_distx = max_dist * Math.cos(Math.PI / 4);
     max_disty = max_dist * Math.sin(Math.PI / 4);
-    obj_timer = 3.0;
-
-    // Adicionar obstáculos do próximo nível
-    obstacles = []; // Limpar obstáculos existentes
-    addObstacle(
-        levelobstacles[level].x,
-        levelobstacles[level].y,
-        levelobstacles[level].w,
-        levelobstacles[level].h
-    );
-
-    // Reiniciar o estado do jogo
     playing = true;
+    
 
-    console.log(`Level ${level} initialized.`);
-    if (isBallInObjective(ball, obj_marker)) {
-        console.log(`Objective reached for level ${level}`);
-        handleNextLevel(); // Avançar para o próximo nível
-
-    }
-    if (isBallInObjective(ball, obj_marker)) {
-    console.log(`Objective reached for level ${level}`);
-    handleNextLevel(); // Avançar para o próximo nível
-}
 
 }
 
+function handleGameWin(){
+    playing = false;
+    let data = JSON.stringify(
+        { data:{
+            type: 'bird',
+            level: level,
+            completed: level >= (anchors.length -1),
+            time: gametime
+        }
+        }
+    )
+    sendData(data)
+    gametime = 0;
+    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+    myModal.show();
+    myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
+    setTimeout(() => {
+        startFireworks(document.getElementById('modal-text'));
+        StartConfetti();
+    }, 4500);
 
+
+}
 
 
 export function lockModal(angle) {
@@ -556,72 +546,3 @@ resizeCanvas();
 document.getElementById("endButton").addEventListener("click", () => {
     endGame(); // Finalizar o jogo manualmente
 });
-
-function endGame() {
-    // Parar o temporizador
-    clearInterval(timeinterval);
-
-    // Remover o evento de sobreposição
-    wateringcan.removeEventListener('overlap', handleOverlap);
-
-    // Coletar dados do buffer e registrar informações
-    let points = permabuffer.map((point) => {
-        return { time: point[0], x: point[1], y: point[2], z: point[3] };
-    });
-
-    // Enviar dados ao backend via AJAX
-    $.ajax({
-        type: "POST",
-        url: "/save_score",
-        data: JSON.stringify({
-            name: 'name', // Nome do jogador (ajuste conforme necessário)
-            score: time.toFixed(1),
-            game: "estilingue",
-            graph: points,
-            overlaps: overlaptimes
-        }),
-        contentType: "application/json",
-        success: function (data) {
-            console.log('Game data saved successfully:', data);
-        },
-        error: function (err) {
-            console.error('Error saving game data:', err);
-        }
-    });
-
-    // Mostrar modal ou mensagem de conclusão
-    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
-    myModal.show();
-}
-
-function handleGameWin(){
-    if (document.getElementById("startScreen").style.display == "none"){
-    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
-        myModal.show();
-        setTimeout(() => {
-            startFireworks(document.getElementById('modal-text'));
-            StartConfetti();
-        }, 4500);
-        clearInterval(timeinterval);
-        wateringcan.removeEventListener('overlap', handleOverlap);
-        //need to stop the graph from updating
-        let points = permabuffer.map((point) => { // this is a dict of all the points in permabuffer
-            return { time: point[0], x: point[1], y: point[2], z: point[3] };
-        }); //pass this through AJAX to the backend]
-        $.ajax({
-            type: "POST",
-            url: "/save_score",
-            data: JSON.stringify({
-                name: 'name',
-                score: time.toFixed(1),
-                game: "estilingue",
-                graph: points,
-                overlaps: overlaptimes
-            }),
-            contentType: "application/json",
-            success: function(data){
-                console.log(data);
-            }
-        });
-        
- }}
