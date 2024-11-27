@@ -59,15 +59,21 @@ var opts = {
 
 var plantTarget = document.getElementById('gauge1'); // your canvas element
 var plantGauge = new Gauge(plantTarget,150,300).setOptions(opts); // create sexy plantGauge!
-plantGauge.maxValue = 100; // set max plantGauge value
+plantGauge.maxValue = 100; // set max plant Gauge value
 plantGauge.setMinValue(-20);  // Prefer setter over plantGauge.minValue = 0
 plantGauge.animationSpeed = 32; // set animation speed (32 is default value)
+
 
 var birdTarget = document.getElementById('gauge2'); // your canvas element
 var birdGauge = new Gauge(birdTarget, 150,300).setOptions(opts); // Correct initialization
 birdGauge.maxValue = 100; 
 birdGauge.setMinValue(-20);  
 birdGauge.animationSpeed = 32;
+function updateAngleDisplay(angle) {
+  const angleDisplay = document.getElementById('angle-display');
+  angleDisplay.innerHTML = `Angulação: ${angle.toFixed(2)}°`;
+}
+
 
 
 function adjustSpeedo(value, game) {
@@ -79,6 +85,7 @@ function adjustSpeedo(value, game) {
     case 'bird':
       let angle = value.angle
       birdGauge.set(angle); // Use the Gauge instance directly
+      updateAngleDisplay(angle); // Atualiza o valor no display
       break;
     default:
       console.warn('Unknown game type:', game);

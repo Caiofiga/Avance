@@ -280,6 +280,8 @@ function handleNextLevel(){
     max_distx = max_dist * Math.cos(Math.PI / 4);
     max_disty = max_dist * Math.sin(Math.PI / 4);
     playing = true;
+    gametime = 0;
+
     
 
 
@@ -297,11 +299,11 @@ function handleGameWin(){
         }
     )
     sendData(data)
-    gametime = 0;
-    const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
-    myModal.show();
-    myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
     setTimeout(() => {
+        const myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+        myModal.show();
+        myModal._element.addEventListener('hidden.bs.modal', handleNextLevel);
+    
         startFireworks(document.getElementById('modal-text'));
         StartConfetti();
     }, 4500);
@@ -387,6 +389,7 @@ function animate() {
     lastframetime = performance.now(); // Update the last frame time
 
     if (playing) gametime += deltaTime;
+    console.log(gametime)
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
