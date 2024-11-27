@@ -14,7 +14,6 @@ const plantGraph = new Dygraph(
       pointSize: 4,
       showRoller: false,
       legend: "always",
-
     }
   );
   const angleGraph = new Dygraph(
@@ -121,6 +120,7 @@ let dataBuffer = [];
   function stopWorker() {
     sensorWorker.postMessage({ type: "stop" });
   }
+
   document.addEventListener("DOMContentLoaded", function() {
     // Attach the event handler after the DOM is fully loaded
     document.getElementById("wifi-form").addEventListener("submit", function(event) {
@@ -133,9 +133,6 @@ let dataBuffer = [];
     });
   });
   
-
-  
-
     // shittyly calculated averages:
     // { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
     function is_shaking(x, y, z) {
@@ -177,6 +174,7 @@ let dataBuffer = [];
   function toggleGraph(graph, enable){
      if (enable) graph.updateOptions({ file: dataBuffer });
      else graph.updateOptions({ file: null });
+     console.log(graph);
   } 
 
   function ExportGraph() {

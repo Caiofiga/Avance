@@ -151,7 +151,7 @@ def process_video():
         frame_data = base64.b64encode(buffer).decode('utf-8')
 
         # Send frame to the client via WebSocket
-        socketio.emit('video_feed', {'frame': frame_data})
+        socketio.emit('video_feed', {'frame': frame_data}, namespace='/camera')
 
         # Exit if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -395,119 +395,15 @@ cors = CORS(flaskapp)
 socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
-DEVICE_NAME = "ESP32"
-SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0"
-CHARACTERISTIC_UUID = "87654321-4321-6789-4321-fedcba987654"
+
+@socketio.on('connect', namespace='/camera')
+def connect_camera():
+    print("Camera client connected")
 
 
-def get_ssids():
-    min_strength = 70
-    ssids = set()  # Use a set to avoid duplicates
-    try:
-        if platform.system() == "Linux":
-            result = subprocess.run(
-                ["nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi"], stdout=subprocess.PIPE)
-            lines = result.stdout.decode("utf-8").strip().split("\n")
-            for line in lines:
-                parts = line.split(":")
-                if len(parts) == 2:
-                    ssid, signal = parts[0], int(parts[1])
-                    if signal >= min_strength:
-                        ssids.add(ssid)
-        elif platform.system() == "Windows":
-            result = subprocess.run(
-                ["netsh", "wlan", "show", "network", "mode=bssid"], stdout=subprocess.PIPE)
-            output = result.stdout.decode("utf-8")
-            current_ssid = None
-            for line in output.split("\n"):
-                if "SSID" in line and "BSSID" not in line:
-                    current_ssid = line.split(":")[1].strip()
-                elif "Signal" in line:
-                    strength = int(line.split(":")[1].strip().replace("%", ""))
-                    if current_ssid and strength >= min_strength:
-                        ssids.add(current_ssid)
-        elif platform.system() == "Darwin":  # macOS
-            result = subprocess.run(["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-s"],
-                                    stdout=subprocess.PIPE)
-            lines = result.stdout.decode(
-                "utf-8").strip().split("\n")[1:]  # Skip header
-            for line in lines:
-                parts = line.split()
-                ssid = parts[0]
-                # Signal strength is typically near the end
-                strength = int(parts[-2])
-                if strength >= min_strength:
-                    ssids.add(ssid)
-    except Exception as e:
-        print(f"Error retrieving SSIDs: {e}")
-    return list(ssids)  # Convert set to list for JSON response
-
-# region website serving
-
-
-async def sendDataToEsp(esp32, credentials):
-    ip_address = None  # Variable to store the IP address
-
-    async with BleakClient(esp32.address) as client:
-        print(f"Connected to {DEVICE_NAME}")
-
-        def notification_handler(sender, data):
-            nonlocal ip_address
-            ip_address = data.decode()  # Decode the notification data as the IP address
-            print(f"Notification from {sender}: {ip_address}")
-
-        # Start listening for notifications
-        await client.start_notify(CHARACTERISTIC_UUID, notification_handler)
-
-        # Send Wi-Fi credentials
-        await client.write_gatt_char(CHARACTERISTIC_UUID, credentials.encode())
-
-        # Wait dynamically for the IP address or timeout
-        for _ in range(20):  # 20 * 0.5s = 10 seconds max wait
-            if ip_address is not None:
-                break
-            await asyncio.sleep(0.5)
-
-        await client.stop_notify(CHARACTERISTIC_UUID)
-
-        if ip_address:
-            print(f"Received IP address: {ip_address}")
-        else:
-            print("Failed to receive IP address notification within timeout.")
-
-    return ip_address  # Return the IP address
-
-
-@flaskapp.route("/connect", methods=["POST"])
-def connect():
-    data = request.get_json()
-    print(data)
-    ssid = data.get('ssid')
-    password = data.get('password')
-    credentials = f'{ssid},{password}'
-
-    async def discover_and_connect():
-        devices = await BleakScanner.discover()
-        esp32 = next((d for d in devices if d.name == DEVICE_NAME), None)
-        if not esp32:
-            return {"message": "ESP32 not found"}, 404
-
-        # Assuming sendDataToEsp is an async function
-        ip_addr = await sendDataToEsp(esp32, credentials)
-        return json.loads(ip_addr)
-
-    # Run the async function synchronously in Flask
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(discover_and_connect())
-    return jsonify(result)
-
-
-@flaskapp.route("/ssids", methods=["GET"])
-def ssids():
-    # Get minimum strength from query params
-    ssid_list = get_ssids()
-    return jsonify({"ssids": ssid_list})
+@socketio.on('disconnect', namespace='/camera')
+def disconnect_camera():
+    print("Camera client disconnected")
 
 
 @flaskapp.route('/admin')

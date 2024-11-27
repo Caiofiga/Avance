@@ -207,7 +207,7 @@ videoWorker.onmessage = function(e) {
 };
 
 // Start the WebSocket connection via the worker
-videoWorker.postMessage({ type: 'openWebSocket', url: 'http://localhost:5000' });
+videoWorker.postMessage({ type: 'openWebSocket', url: 'http://localhost:5000/camera' });
 
 
 

@@ -151,7 +151,6 @@ function placeTimer(gameElement, time, id){
   let timer = document.createElement("p");
   timer.innerHTML = `Nivel ${id}: ${(time / 1000).toFixed(2)}`;
   timeElement.appendChild(timer);
-  console.log()
 
 }
 
