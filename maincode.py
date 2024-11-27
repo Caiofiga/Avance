@@ -16,7 +16,6 @@ from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 import secrets
 import base64
-from bleak import BleakClient, BleakScanner
 import platform
 import subprocess
 

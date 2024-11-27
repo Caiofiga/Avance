@@ -189,17 +189,24 @@ function ShowBirdData(data) {
   let gameElement = document.getElementById('game_2')
   let circles = gameElement.getElementsByClassName('circle');
   circles[id].style.backgroundColor = 'green';
-  placeTimer(gameElement, data.time, id);
+  placeBirdTimer(gameElement, data.time, id);
 
   if (data.completed){
     toggleGraph(angleGraph, false);
     console.log("complete!");
     gameElement.querySelector("#finished_alert").style.display = 'flex';
-    gameElement.style ='background-color: rgba(0, 0, 0, 0.7)';
+    gameElement.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'; // Fundo claro
+  }
+  function placeBirdTimer(gameElement, time, id) {
+    let timeElement = gameElement.querySelector("#Time");
+    let existingTimer = timeElement.querySelector(`#timer_${id}`);
+    if (existingTimer) existingTimer.remove(); // Remove old timer if exists
+  
+    let timer = document.createElement("p");
+    timer.id = `timer_${id}`;
+    timer.innerHTML = `Nivel ${id}: ${time ? (time).toFixed(2) : "Tempo não disponível"}`;
+    timeElement.appendChild(timer);
+  
   }
 }
-
-
-
-
 
