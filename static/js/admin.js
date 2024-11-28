@@ -457,12 +457,11 @@ function ShowPlantData(data) {
 
 function ShowBirdData(data) {
   let gameElement = document.getElementById("game_2");
-  if (!data.completed) {
-    let id = parseInt(data.level, 10);
-    let circles = gameElement.getElementsByClassName("circle");
-    circles[id].style.backgroundColor = "green";
-    placeBirdTimer(gameElement, data.time, id);
-  } else if (data.completed) {
+  let id = parseInt(data.level, 10);
+  let circles = gameElement.getElementsByClassName("circle");
+  circles[id].style.backgroundColor = "green";
+  placeBirdTimer(gameElement, data.time, id);
+  if (data.completed) {
     toggleGraph(angleGraph, false);
     console.log("complete!");
     gameElement.querySelector("#finished_alert").style.display = "flex";

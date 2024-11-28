@@ -48,6 +48,10 @@ const blob = new Blob([CameraworkerCode], { type: "application/javascript" });
 const worker = new Worker(URL.createObjectURL(blob));
 worker.postMessage("Start");
 worker.onmessage = function (event) {
+  if (event.data.type === "movement") {
+    let displacement = event.data.data;
+    lockModal(displacement.angle);
+  }
   if (
     event.data.type === "movement" &&
     document.getElementById("gameScreen").style.display != "none"

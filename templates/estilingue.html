@@ -15,7 +15,7 @@
   <body
     style="background-image: url('{{ url_for('static', filename='img/praia.svg') }}')"
   >
-    <div id="video_feed">
+    <div id="video_feed" style="z-index: 9999">
       <button id="captureButton" class="btn btn-info" onclick="ToggleCamera()">
         Esconder Camera
       </button>
@@ -32,17 +32,17 @@
         <li>Permaneça no local por 3 segundos para ser disparado</li>
         <li>Quando a bolinha for disparada irá atingir um alvo</li>
       </ul>
+      <h3 id="lowerstartangle">
+        Por Favor Diminua o angulo do braco para continuar!
+      </h3>
       <button id="startButton" class="btn btn-primary">Comece a jogar</button>
     </div>
 
-
     <div id="gameScreen">
       <button id="endButton" class="btn btn-danger">Finalizar Jogo</button>
-      
-      
 
       <canvas id="gameCanvas" width="1920px" height="1080px"></canvas>
-  
+
       <!-- Victory Modal -->
       <div
         class="modal fade"

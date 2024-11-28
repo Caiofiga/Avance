@@ -17,9 +17,9 @@ const ctx = canvas.getContext("2d");
 let level = 0;
 
 let anchors = [
-  { x: 150, y: 600 },
-  { x: 300, y: 800 },
-  { x: 450, y: 800 },
+  { x: 300, y: 600 },
+  { x: 300, y: 600 },
+  { x: 300, y: 600 },
 ];
 
 // Game variables
@@ -34,7 +34,7 @@ let ball = {
   visible: true,
 };
 
-let distances = [100, 125, 50]; // Set distance away from the anchors at a 45 degree angle
+let distances = [75, 120, 175]; // Set distance away from the anchors at a 45 degree angle
 const angle = Math.PI / 4;
 
 let objectives = anchors.map((anchor, index) => ({
@@ -54,6 +54,14 @@ let isLaunched = false;
 let max_dist = distances[level] + 100; //buffer to solidfy reaching the objective
 let max_distx = max_dist * Math.cos(Math.PI / 4);
 let max_disty = max_dist * Math.sin(Math.PI / 4);
+
+let obstacles = [];
+
+let levelobstacles = [
+  { x: 1280, y: 500, w: 50, h: 50 },
+  { x: 1700, y: 1100, w: 50, h: 50 },
+  { x: 800, y: 850, w: 50, h: 50 },
+];
 
 export function dragBall(x) {
   let dist_x = Math.abs(ball.x) - anchor.x;
@@ -157,61 +165,60 @@ class Obstacle {
   }
 
   checkcollision(ball) {
-    if (this.broadPhaseCheck(ball)) {
-      if (
-        ball.x + ball.radius > this.x &&
-        ball.x - ball.radius < this.x + this.width &&
-        ball.y + ball.radius > this.y &&
-        ball.y - ball.radius < this.y + this.height
-      ) {
-        // Simple collision response
-        ball.vx *= -1;
-        ball.vy *= -1;
+    if (playing) {
+      if (this.broadPhaseCheck(ball)) {
+        if (
+          ball.x + ball.radius > this.x &&
+          ball.x - ball.radius < this.x + this.width &&
+          ball.y + ball.radius > this.y &&
+          ball.y - ball.radius < this.y + this.height
+        ) {
+          // Simple collision response
+          ball.vx *= -1;
+          ball.vy *= -1;
 
-        // Determine the side of the obstacle where the collision occurred
-        let collisionX, collisionY;
+          // Determine the side of the obstacle where the collision occurred
+          let collisionX, collisionY;
 
-        if (ball.x < this.x) {
-          // Collision on the left side
-          collisionX = this.x;
-          collisionY = ball.y;
-        } else if (ball.x > this.x + this.width) {
-          // Collision on the right side
-          collisionX = this.x + this.width;
-          collisionY = ball.y;
-        } else if (ball.y < this.y) {
-          // Collision on the top side
-          collisionX = ball.x;
-          collisionY = this.y;
-        } else if (ball.y > this.y + this.height) {
-          // Collision on the bottom side
-          collisionX = ball.x;
-          collisionY = this.y + this.height;
+          if (ball.x < this.x) {
+            // Collision on the left side
+            collisionX = this.x;
+            collisionY = ball.y;
+          } else if (ball.x > this.x + this.width) {
+            // Collision on the right side
+            collisionX = this.x + this.width;
+            collisionY = ball.y;
+          } else if (ball.y < this.y) {
+            // Collision on the top side
+            collisionX = ball.x;
+            collisionY = this.y;
+          } else if (ball.y > this.y + this.height) {
+            // Collision on the bottom side
+            collisionX = ball.x;
+            collisionY = this.y + this.height;
+          }
+
+          // Play the collision GIF at the exact collision point
+          const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
+          const x = rect.left + this.x + this.width / 2;
+          const y = rect.top + this.y + this.height / 2;
+          if (!collided) {
+            collided = true;
+            redrawObstacles(x, y);
+          }
         }
-
-        // Play the collision GIF at the exact collision point
-        const rect = canvas.getBoundingClientRect(); //margins were interfering, need to get the clientrect()
-        const x = rect.left + this.x + this.width / 2;
-        const y = rect.top + this.y + this.height / 2;
-        showgarrafa5(x, y);
       }
     }
   }
 }
-
-function showgarrafa5() {
-  // Substituir a imagem da garrafa1 pela garrafa5
-  garrafa1.src = "../static/img/garrafa5.png";
-
-  // Garantir que a nova imagem seja carregada antes de desenhar
-  garrafa1.onload = () => {
-    redrawObstacles(customWidth, customHeight); // Redesenhar os obstáculos para refletir a mudança
-  };
-}
+let collided = false;
 let handledgameWin = false;
+
 function redrawObstacles(width, height) {
   // Redesenhar os obstáculos com a nova imagem
+
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpar o canvas
+  garrafa1.src = "../static/img/garrafa5.png";
   drawObstacles(true); // Chamar a função para redesenhar os obstáculos
   if (garrafa1.src.includes("garrafa1.png"))
     console.log("Collision with garrafa1 detected!"); // Log para verificar a colisão
@@ -225,6 +232,7 @@ function handleNextLevel() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   level++;
   isLaunched = false;
+  obstacles = [];
   if (level >= anchors.length) {
     level = 0;
   }
@@ -239,6 +247,12 @@ function handleNextLevel() {
     isLaunched: false,
     visible: true,
   };
+
+  objectives = anchors.map((anchor, index) => ({
+    x: anchor.x - distances[index] * Math.cos(Math.PI / 4),
+    y: anchor.y + distances[index] * Math.sin(Math.PI / 4),
+  }));
+
   obj_marker = {
     x: objectives[level].x,
     y: objectives[level].y,
@@ -262,8 +276,12 @@ function handleNextLevel() {
   max_dist = distances[level] + 100;
   max_distx = max_dist * Math.cos(Math.PI / 4);
   max_disty = max_dist * Math.sin(Math.PI / 4);
-  playing = true;
   gametime = 0;
+  handledgameWin = false;
+  garrafa1.src = "../static/img/garrafa1.png";
+  changed_size = false;
+  collided = false;
+  playing = true;
 }
 
 function handleGameWin() {
@@ -272,7 +290,7 @@ function handleGameWin() {
     data: {
       type: "bird",
       level: level,
-      completed: true,
+      completed: level + 1 >= distances.length,
       time: gametime,
     },
   });
@@ -292,24 +310,22 @@ function handleGameWin() {
 export function lockModal(angle) {
   const closemodalbutton = document.getElementById("closemodalbutton");
   const modaltext = document.getElementById("lowerangle");
+  const startButton = document.getElementById("startButton");
+  const startText = document.getElementById("lowerstartangle");
 
   // Update the locked state based on the angle
   if (angle > 20) {
     closemodalbutton.disabled = true;
     modaltext.style.visibility = "inherit";
+    startButton.disabled = true;
+    startText.style.visibility = "inherit";
   } else {
     closemodalbutton.disabled = false;
     modaltext.style.visibility = "hidden";
+    startButton.disabled = false;
+    startText.style.visibility = "hidden";
   }
 }
-
-let obstacles = [];
-
-let levelobstacles = [
-  { x: 1280, y: 500, w: 50, h: 50 },
-  { x: 900, y: 100, w: 50, h: 50 },
-  { x: 800, y: 50, w: 50, h: 50 },
-];
 
 let changed_size = false;
 // Definir o tamanho desejado
@@ -317,18 +333,20 @@ const customWidth = 400; // Substitua pelo tamanho desejado
 const customHeight = 200;
 
 function drawObstacles(change) {
-  let obstacle = obstacles[level];
-  if (change) {
-    //this is probabily a shitty solution
-    changed_size = true;
-  }
-  if (changed_size) {
-    obstacle.drawctx(true, customWidth, customHeight);
-  } else {
-    obstacle.drawctx(false);
-  }
+  if (obstacles.length > 0) {
+    let obstacle = obstacles[0];
+    if (change) {
+      //this is probabily a shitty solution
+      changed_size = true;
+    }
+    if (changed_size) {
+      obstacle.drawctx(true, customWidth, customHeight);
+    } else {
+      obstacle.drawctx(false);
+    }
 
-  obstacle.checkcollision(ball); // Check collision during each frame
+    obstacle.checkcollision(ball); // Check collision during each frame
+  }
 }
 
 function addObstacle(x, y, w, h) {
