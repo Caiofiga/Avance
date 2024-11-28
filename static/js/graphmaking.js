@@ -1,49 +1,50 @@
- // Initialize the Dygraph with empty data
+// Initialize the Dygraph with empty data
 
 const plantGraph = new Dygraph(
-    document.getElementById("chart1"),
-    [], // Initial empty dataset
-    {
-      title: "Real-time Accelerometer Data",
-      labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
-      ylabel: "Acceleration (m/s²)",
-      xlabel: "Time (seconds)",
-      colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
-      strokeWidth: 2.5,
-      drawPoints: true,
-      pointSize: 4,
-      showRoller: false,
-      legend: "always",
-    }
-  );
-  const angleGraph = new Dygraph(
-    document.getElementById("chart2"),
-    [], // Initial empty dataset
-    {
-      title: "Real-time Accelerometer Data",
-      labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
-      ylabel: "Acceleration (m/s²)",
-      xlabel: "Time (seconds)",
-      colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
-      strokeWidth: 2.5,
-      drawPoints: true,
-      pointSize: 4,
-      showRoller: false,
-      legend: "always",
+  document.getElementById("chart1"),
+  [], // Initial empty dataset
+  {
+    title: "Real-time Accelerometer Data",
+    labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
+    ylabel: "Acceleration (m/s²)",
+    xlabel: "Time (seconds)",
+    colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
+    strokeWidth: 2.5,
+    drawPoints: true,
+    pointSize: 4,
+    showRoller: false,
+    legend: "always",
+  }
+);
+const angleGraph = new Dygraph(
+  document.getElementById("chart2"),
+  [], // Initial empty dataset
+  {
+    title: "Real-time Accelerometer Data",
+    labels: ["Elapsed Time (s)", "X-axis", "Y-axis", "Z-axis"],
+    ylabel: "Acceleration (m/s²)",
+    xlabel: "Time (seconds)",
+    colors: ["#FF6F61", "#6ABF69", "#6A9FF2"],
+    strokeWidth: 2.5,
+    drawPoints: true,
+    pointSize: 4,
+    showRoller: false,
+    legend: "always",
+  }
+);
 
-    }
-  );
-
-  $(document).on( 'shown.bs.tab', function (e) {
-    plantGraph.resize(); // resize the dygraph
-  });
-  $(document).on( 'shown.bs.tab', function (e) {
-    angleGraph.resize(); // resize the dygraph
-  });
+$(document).on("shown.bs.tab", function (e) {
+  plantGraph.resize(); // resize the dygraph
+});
+$(document).on("shown.bs.tab", function (e) {
+  angleGraph.resize(); // resize the dygraph
+});
 
 let dataBuffer = [];
-  // Inline web worker creation
-  const sensorWorkerCode = `
+let permabuffer = [];
+
+// Inline web worker creation
+const sensorWorkerCode = `
     let socket;
     onmessage = function (e) {
       if (e.data.type === "start") {
@@ -65,8 +66,8 @@ let dataBuffer = [];
         console.error("Invalid URL provided:", e.data.url);
         return;
       }
+      wsUrl = "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
       socket = new WebSocket(wsUrl.toString());
-
 
         socket.onopen = function (e) {
           console.log("WebSocket connected in sensor worker");
@@ -78,7 +79,7 @@ let dataBuffer = [];
 
       socket.onmessage = function (event) {
       let message = JSON.parse(event.data);
-      let accelData = { X: message.accelX, Y: message.accelY, Z: message.accelZ }; // {X, Y, Z} values
+      let accelData = message.values; // {X, Y, Z} values
       let timestamp = message.timestamp;
 
       if (starttime === 0) {
@@ -89,9 +90,9 @@ let dataBuffer = [];
 
         let workerresponse = { 
           timestamp: elapsedTime, 
-          x: accelData.X, 
-          y: accelData.Y, 
-          z: accelData.Z 
+          x: accelData[0], 
+          y: accelData[1], 
+          z: accelData[2] 
         };
         postMessage(workerresponse);
         };
@@ -104,106 +105,106 @@ let dataBuffer = [];
     };
   `;
 
-  // Create a blob URL from the worker code
-  const sensorWorkerBlob = new Blob([sensorWorkerCode], { type: "application/javascript" });
-  const sensorWorkerUrl = URL.createObjectURL(sensorWorkerBlob);
+// Create a blob URL from the worker code
+const sensorWorkerBlob = new Blob([sensorWorkerCode], {
+  type: "application/javascript",
+});
+const sensorWorkerUrl = URL.createObjectURL(sensorWorkerBlob);
 
-  // Create the worker
-  const sensorWorker = new Worker(sensorWorkerUrl);
+// Create the worker
+const sensorWorker = new Worker(sensorWorkerUrl);
 
-  // Function to start the worker with the WebSocket URL
-  function startSensorWorker(url) {
-    sensorWorker.postMessage({ type: "start", url: url });
-  }
+// Function to start the worker with the WebSocket URL
+function startSensorWorker(url) {
+  sensorWorker.postMessage({ type: "start", url: url });
+}
 
-  // Function to stop the worker
-  function stopWorker() {
-    sensorWorker.postMessage({ type: "stop" });
-  }
+// Function to stop the worker
+function stopWorker() {
+  sensorWorker.postMessage({ type: "stop" });
+}
 
-  document.addEventListener("DOMContentLoaded", function() {
-    // Attach the event handler after the DOM is fully loaded
-    document.getElementById("wifi-form").addEventListener("submit", function(event) {
+document.addEventListener("DOMContentLoaded", function () {
+  // Attach the event handler after the DOM is fully loaded
+  document
+    .getElementById("wifi-form")
+    .addEventListener("submit", function (event) {
       event.preventDefault(); // Prevent the default form submission behavior
-  
+
       // Get the value from the input field
-      let ip = document.getElementById("wifi-text").value;  
+      let ip = document.getElementById("wifi-text").value;
       // Call your function with the IP
       startSensorWorker(ip);
     });
-  });
-  
-    // shittyly calculated averages:
-    // { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
-    function is_shaking(x, y, z) {
-      let thresholds = [0.0375, 0.0177, 9.864];
-      return x > thresholds[0] || y > thresholds[1] || z > thresholds[2];
-    }
+});
 
+// shittyly calculated averages:
+// { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
+function is_shaking(x, y, z) {
+  let thresholds = [0.0375, 0.0177, 9.864];
+  return x > thresholds[0] || y > thresholds[1] || z > thresholds[2];
+}
 
-    let plantGraphEnabled = true;
+let plantGraphEnabled = true;
 let angleGraphEnabled = true;
 
-  // Handle messages from the worker
-  sensorWorker.onmessage = function (e) {
-    let timestamp = e.data.timestamp;
-    let x = e.data.x;
-    let y = e.data.y;
-    let z = e.data.z;
-  
-    if (is_shaking(x, y, z)) {
-      $("#shaking").html("Shaking");
-      $("#shaking").removeClass("normal");
-      $("#shaking").addClass("shaking");
+// Handle messages from the worker
+sensorWorker.onmessage = function (e) {
+  let timestamp = e.data.timestamp;
+  let x = e.data.x;
+  let y = e.data.y;
+  let z = e.data.z;
 
-    } else {
-      $("#shaking").html("Not Shaking");
-      $("#shaking").removeClass("shaking");
-      $("#shaking").addClass("normal");
-    }
-    
-    // Append the new data to the buffer (timestamp, x, y, z)
-    dataBuffer.push([timestamp, x, y, z]);
+  if (is_shaking(x, y, z)) {
+    $("#shaking").html("Shaking");
+    $("#shaking").removeClass("normal");
+    $("#shaking").addClass("shaking");
+  } else {
+    $("#shaking").html("Not Shaking");
+    $("#shaking").removeClass("shaking");
+    $("#shaking").addClass("normal");
+  }
 
-    // Buffer out old data from IRT graph, but keep it stored in permabuffer
-    averages = null
-    if (dataBuffer.length > 100) {
+  // Append the new data to the buffer (timestamp, x, y, z)
+  dataBuffer.push([timestamp, x, y, z]);
+  permabuffer.push([timestamp, x, y, z]);
 
-      dataBuffer.shift();
-    }
+  // Buffer out old data from IRT graph, but keep it stored in permabuffer
+  averages = null;
+  if (dataBuffer.length > 100) {
+    dataBuffer.shift();
+  }
 
-        // Update only if the graph is enabled
-        if (plantGraphEnabled) {
-          plantGraph.updateOptions({ file: dataBuffer });
-      }
-      if (angleGraphEnabled) {
-          angleGraph.updateOptions({ file: dataBuffer });
-      }
-  
-    }
-    // Update the Dygraph with the new data
+  // Update only if the graph is enabled
+  if (plantGraphEnabled) {
+    plantGraph.updateOptions({ file: dataBuffer });
+  }
+  if (angleGraphEnabled) {
+    angleGraph.updateOptions({ file: dataBuffer });
+  }
+};
+// Update the Dygraph with the new data
 
 // Toggling graph enable/disable
 function toggleGraph(graph, enable) {
   if (graph === plantGraph) {
-      plantGraphEnabled = enable;
+    plantGraphEnabled = enable;
   } else if (graph === angleGraph) {
-      angleGraphEnabled = enable;
+    angleGraphEnabled = enable;
   }
 }
 
-  function ExportGraph() {
-
-    $.ajax({
-        type: "POST",
-        url: "http://localhost:5000/savegraph",
-        contentType: "application/json",  // Set the content type to JSON
-        data: JSON.stringify({ data: points }),  // Serialize the data to JSON
-        success: function (response) {
-            console.log(response);
-        },
-        error: function (xhr, status, error) {
-            console.error("Error during export:", error);
-        }
-    });
+function ExportGraph() {
+  $.ajax({
+    type: "POST",
+    url: "http://localhost:5000/savegraph",
+    contentType: "application/json", // Set the content type to JSON
+    data: JSON.stringify({ data: points }), // Serialize the data to JSON
+    success: function (response) {
+      console.log(response);
+    },
+    error: function (xhr, status, error) {
+      console.error("Error during export:", error);
+    },
+  });
 }

@@ -60,6 +60,8 @@
     </style>
   </head>
   <body>
+    <button id="save_button" onclick="SaveFiles()">Salvar Dados</button>
+    <div id='graphIMG'></div>
     <div class="container">
       <form id="wifi-form" class="mb-3">
         <div class="input-group">
@@ -216,13 +218,14 @@
       </div>
     </div>
 
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
     <!-- jQuery Library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript" src="https://unpkg.com/dygraphs@2.2.1/dist/dygraph.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 
     <script src={{ url_for('static', filename='js/graphmaking.js') }}></script>
     <script src={{ url_for('static', filename='js/gauge.min.js') }}></script>

@@ -18,6 +18,7 @@ import secrets
 import base64
 import platform
 import subprocess
+import os
 
 # Preface: This is a fucking mess
 
@@ -239,7 +240,7 @@ def get_segmented_data(times, data, start_time, end_time):
     return segment_times, segment_data
 
 
-def creategraph(graphdata, overlaps):
+def creategraphgame1(graphdata, overlaps):
 
     data = graphdata
 
@@ -380,10 +381,96 @@ def creategraph(graphdata, overlaps):
     plt.tight_layout()
 
     # Save the plot to a unique file
-    filename = f"plot_{uuid.uuid4()}.png"
+    filename = f"Graphs/Game1/plot_{uuid.uuid4()}.png"
     plt.savefig(filename)
 
     return filename
+
+
+def creategraphgame2(graphdata):
+
+    data = graphdata
+
+    try:
+        points = [{'time': point['time'], 'x': point['x'],
+                   'y': point['y'], 'z': point['z']} for point in data]
+    except KeyError:
+        return '400 Bad Request: Invalid data format', 400
+
+    times = [point['time'] for point in points]
+    x_vals = [point['x'] for point in points]
+    y_vals = [point['y'] for point in points]
+    z_vals = [point['z'] for point in points]
+
+    # Ensure that data lists are non-empty and of equal length
+    if len(times) == 0 or len(times) != len(x_vals) or len(x_vals) != len(y_vals) or len(y_vals) != len(z_vals):
+        return '400 Bad Request: Data arrays are empty or mismatched in length', 400
+
+    # Filter parameters
+    # shittyly calculated averages:
+    # { time: 1.261, x: 0.0375, y: 0.0177, z: 9.864 }
+    cutoff_freq_x = 0.0375
+    cutoff_freq_y = 0.0177
+    cutoff_freq_z = 9.864
+    sampling_rate = 50.0  # Sampling rate, adjust as needed
+
+    filtered_x = x_vals
+    filtered_y = y_vals
+    filtered_z = z_vals
+
+    # Calculate how many rows we need based on the time
+    max_time = max(times)
+    num_time_segments = int(np.ceil(max_time / 200.0))
+
+    # Create a figure with 3 * num_time_segments rows and 1 column for subplots
+    plt.figure(figsize=(10, 8 * num_time_segments))
+
+    for i in range(num_time_segments):  # this is when we loop-de-loop
+        # somehow, I need to plot the overlap times here
+        # Define the time limits for each segment
+        start_time = i * 200
+        end_time = (i + 1) * 200
+
+        # Get the data segment for the current time range
+        seg_times_x, seg_x_vals = get_segmented_data(
+            times, filtered_x, start_time, end_time)
+        seg_times_y, seg_y_vals = get_segmented_data(
+            times, filtered_y, start_time, end_time)
+        seg_times_z, seg_z_vals = get_segmented_data(
+            times, filtered_z, start_time, end_time)
+
+        # Plot X-axis data
+        ax1 = plt.subplot(3 * num_time_segments, 1, i * 3 + 1)
+        ax1.plot(seg_times_x, seg_x_vals, label='Filtered X', color='r')
+        ax1.set_title(f'X Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax1.set_xlabel('Time (s)')
+        ax1.set_ylabel('Acceleration')
+        ax1.grid(True)
+
+        ax2 = plt.subplot(3 * num_time_segments, 1, i * 3 + 2)
+        ax2.plot(seg_times_y, seg_y_vals, label='Filtered Y', color='g')
+        ax2.set_title(f'Y Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax2.set_xlabel('Time (s)')
+        ax2.set_ylabel('Acceleration')
+        ax2.grid(True)
+
+        ax3 = plt.subplot(3 * num_time_segments, 1, i * 3 + 3)
+        ax3.plot(seg_times_z, seg_z_vals, label='Filtered Z', color='b')
+        ax3.set_title(f'Z Axis - Segment {i+1} ({start_time} to {end_time}s)')
+        ax3.set_xlabel('Time (s)')
+        ax3.set_ylabel('Acceleration')
+        ax3.grid(True)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+
+    # Save the plot to a unique file
+    filename = f"Graphs/Game2/plot_{uuid.uuid4()}.png"
+    plt.savefig(filename)
+
+    return filename
+
+
 # endregion
 
 
@@ -394,6 +481,13 @@ flaskapp = Flask(__name__)
 cors = CORS(flaskapp)
 socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
+
+
+def get_latest_file(directory):
+    files = [os.path.join(directory, f) for f in os.listdir(
+        directory) if os.path.isfile(os.path.join(directory, f))]
+    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    return files[0] if files else None
 
 
 @socketio.on('connect', namespace='/camera')
@@ -426,8 +520,8 @@ def estilingue():
     return render_template('estilingue.html')
 
 
-@flaskapp.route('/save_score', methods=['POST'])
-def save_score():
+@flaskapp.route('/save_graph1', methods=['POST'])
+def save_graph1():
     if request.method == 'POST':
         if 'name' not in session:
             session['name'] = request.json['name']
@@ -435,17 +529,42 @@ def save_score():
         data = request.json
         graphdata = data["graph"]  # { time x y z };
         overlaps = data["overlaps"]  # {plantid: time end?}
-        graphname = creategraph(graphdata, overlaps)
+        graphname = creategraphgame1(graphdata, overlaps)
 
-        session[request.form["game"]] = [request.form['score'], graphname]
+        return jsonify({'message': 'Score saved for game 1'})
 
-    match request.form['game']:
-        case 'game1':
-            return jsonify({'message': 'Score saved for game 1'})
-        # and so on for the others
 
-        case _:  # Python and its idiocies annoy me sometimes
-            return jsonify({'message': 'Score saved for game 1'})
+@flaskapp.route('/save_graph2', methods=['POST'])
+def save_graph2():
+    if request.method == 'POST':
+        if 'name' not in session:
+            session['name'] = request.json['name']
+        # create the graph instead
+        data = request.json
+        graphdata = data["graph"]  # { time x y z };
+        graphname = creategraphgame2(graphdata)
+
+        return jsonify({'message': 'Score saved for game 2'})
+
+
+@flaskapp.route('/latest_graphs')
+def getLatestGraphs():
+    def encode_file_to_base64(file_path):
+        with open(file_path, "rb") as file:
+            return base64.b64encode(file.read()).decode('utf-8')
+
+    game1_graphs = get_latest_file("Graphs/Game1")
+    game2_graphs = get_latest_file("Graphs/Game2")
+
+    game1_graphs_encoded = encode_file_to_base64(
+        game1_graphs) if game1_graphs else None
+    game2_graphs_encoded = encode_file_to_base64(
+        game2_graphs) if game2_graphs else None
+
+    return jsonify({
+        'game1_graphs': game1_graphs_encoded,
+        'game2_graphs': game2_graphs_encoded
+    })
 
 
 @flaskapp.route('/endgame')
