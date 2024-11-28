@@ -66,7 +66,6 @@ const sensorWorkerCode = `
         console.error("Invalid URL provided:", e.data.url);
         return;
       }
-      wsUrl = "ws://192.168.50.50:8080/sensor/connect?type=android.sensor.accelerometer"
       socket = new WebSocket(wsUrl.toString());
 
         socket.onopen = function (e) {
@@ -79,7 +78,7 @@ const sensorWorkerCode = `
 
       socket.onmessage = function (event) {
       let message = JSON.parse(event.data);
-      let accelData = message.values; // {X, Y, Z} values
+      let accelData = { X: message.accelX, Y: message.accelY, Z: message.accelZ }; // {X, Y, Z} values
       let timestamp = message.timestamp;
 
       if (starttime === 0) {
@@ -90,9 +89,9 @@ const sensorWorkerCode = `
 
         let workerresponse = { 
           timestamp: elapsedTime, 
-          x: accelData[0], 
-          y: accelData[1], 
-          z: accelData[2] 
+          x: accelData.X, 
+          y: accelData.Y, 
+          z: accelData.Z 
         };
         postMessage(workerresponse);
         };

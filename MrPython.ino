@@ -34,6 +34,7 @@ void WiFiEvent(WiFiEvent_t event) {
       break;
     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
       Serial.println("Wi-Fi connected!");
+      Serial.println("IP address: " + WiFi.localIP().toString());
       credentialsReceived = true;
       break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:

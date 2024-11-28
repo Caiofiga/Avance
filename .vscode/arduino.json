@@ -1,4 +1,6 @@
 {
     "port": "/dev/ttyUSB0",
-    "board": "esp8266:esp8266:nodemcuv2"
+    "board": "esp32:esp32:esp32doit-devkit-v1",
+    "sketch": "MrPython.ino",
+    "configuration": "FlashFreq=80,UploadSpeed=921600,DebugLevel=none,EraseFlash=none"
 }
