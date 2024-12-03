@@ -14,6 +14,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
+from functools import wraps
 import secrets
 import base64
 import platform
@@ -483,6 +484,17 @@ socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
 
+def need_calibration(func):
+    @wraps(func)  # This preserves the original function's name and metadata
+    def wrapper(*args, **kwargs):
+        if session.get('calibration_data') is not None:  # Safely access session data
+            return func(*args, **kwargs)  # Call the original function
+        else:
+            # Redirect if calibration data is missing
+            return redirect('/calibration')
+    return wrapper
+
+
 def get_latest_file(directory):
     files = [os.path.join(directory, f) for f in os.listdir(
         directory) if os.path.isfile(os.path.join(directory, f))]
@@ -505,17 +517,41 @@ def admin():
     return render_template('admin.html')
 
 
+@flaskapp.route('/calibration', methods=['GET', 'POST'])
+def calibrate():
+    if request.method == 'GET':
+        return render_template('calibration.html')
+    elif request.method == "POST":
+       # save the calibration_data to session
+        raw_data = request.get_data()
+        print(f"Raw calibration data: {raw_data}")
+
+        try:
+            calibration_data = raw_data.decode('utf-8')
+            print(f"Decoded calibration data: {calibration_data}")
+            session['calibration_data'] = json.loads(calibration_data)
+            print(f"Session calibration data: {session['calibration_data']}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON data: {e}")
+            # Handle the error appropriately, e.g., return an error response
+            return jsonify({"error": "Invalid JSON data"}), 400
+
+        return jsonify({"message": "Data received correctly!"}), 200
+
+
 @flaskapp.route('/')
 def home():
     return render_template('home.html')
 
 
 @flaskapp.route('/testgame')
+@need_calibration
 def testgame():
     return render_template('testgame.html')
 
 
 @flaskapp.route('/estilingue')
+@need_calibration
 def estilingue():
     return render_template('estilingue.html')
 

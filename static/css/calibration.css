@@ -1,0 +1,100 @@
+
+  #mainScreen {
+    display: none;
+  }
+
+  #video_feed {
+    display: none;
+    position: absolute;
+    left: auto; /* Remove conflicting position */
+    right: 10px; /* Align within gameScreen */
+    top: 10px; /* Optional: position it inside */
+    border-radius: 10px;
+    z-index: 9;
+    flex-direction: column;
+    border-radius: inherit;
+    overflow: hidden;
+}
+#Camera_Wrapper {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.6s ease;
+    transform-origin: top right; /* Set the origin to the top-left */
+}
+
+#startScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    z-index: 10;
+    text-align: center;
+  }
+
+.camera-visible {
+    width: 100%; /* Final width when expanded */
+    height: 100%;
+    transform: scale(1); /* Scale to full size */
+}
+
+.camera-hidden {
+    width: 100%; /* Maintain full width to avoid layout shift */
+    height: 100%;
+    transform: scale(0); /* Scale to zero size */
+}
+#regadorCalibration{
+    display: none;
+    position: absolute;
+    flex-direction: column;
+}
+#EstilingueCalibration{
+    display: none;
+    position: absolute;
+    flex-direction: column;
+
+
+}
+
+/* Header estilizado */
+header {
+    padding: 1rem 0;
+    background: #2d3748;
+    border-bottom: 2px solid #4a5568;
+  }
+  
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #f7fafc;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  .logoimg{
+    width: 160px;
+    height: 160px;
+    margin-top: -20px;
+    margin-bottom: -20px;
+  }
+  
+
+#CalibrationCards{
+    position: absolute;
+    top: 25%;
+    left: 25%;
+}
+
+#CalibrationResults p {
+    font-weight: bold; /* Optional styling for emphasis */
+    margin-top: 10px; /* Add spacing above */
+  }
+  
+
+.imgCards{
+    height: 200px;
+}
