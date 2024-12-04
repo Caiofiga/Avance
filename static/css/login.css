@@ -1,0 +1,68 @@
+/* Estilo para o corpo da página */
+body {
+    margin: 0; /* Remove margens padrão do navegador */
+    font-family: Arial, sans-serif; /* Define a fonte usada no texto */
+    display: flex; /* Usa Flexbox para alinhar os elementos */
+    justify-content: center; /* Centraliza horizontalmente */
+    align-items: center; /* Centraliza verticalmente */
+    height: 100vh; /* Define a altura da página como 100% da janela */
+    background-color: #f4f4f9; /* Cor de fundo suave */
+}
+
+/* Estilo para o contêiner do formulário de login */
+.login-container {
+    background-color: #ffffff; /* Cor de fundo branca */
+    padding: 20px 30px; /* Espaçamento interno no contêiner */
+    border-radius: 8px; /* Cantos arredondados */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra ao redor do contêiner */
+    width: 100%; /* Faz com que o contêiner ocupe todo o espaço disponível */
+    max-width: 400px; /* Limita a largura máxima a 400px */
+}
+
+/* Estilo para o título do formulário */
+.login-form h2 {
+    text-align: center; /* Centraliza o texto */
+    margin-bottom: 20px; /* Espaço abaixo do título */
+    color: #333; /* Cor do texto */
+}
+
+/* Estilo para os grupos de campos (nome de usuário e senha) */
+.form-group {
+    margin-bottom: 15px; /* Espaçamento entre os campos */
+}
+
+/* Estilo para as etiquetas de cada campo */
+.form-group label {
+    display: block; /* Exibe o texto em uma nova linha */
+    font-size: 14px; /* Tamanho do texto */
+    margin-bottom: 5px; /* Espaço entre a etiqueta e o campo */
+    color: #555; /* Cor do texto da etiqueta */
+}
+
+/* Estilo para os campos de entrada (texto e senha) */
+.form-group input {
+    width: 100%; /* O campo ocupa 100% do espaço disponível */
+    padding: 10px; /* Espaçamento interno no campo */
+    font-size: 14px; /* Tamanho do texto no campo */
+    border: 1px solid #ccc; /* Borda cinza clara */
+    border-radius: 4px; /* Cantos arredondados */
+    box-sizing: border-box; /* Inclui o padding na largura total */
+}
+
+/* Estilo para o botão de login */
+.login-button {
+    width: 100%; /* O botão ocupa 100% do espaço disponível */
+    padding: 10px; /* Espaçamento interno */
+    font-size: 16px; /* Tamanho do texto */
+    color: #fff; /* Cor do texto (branca) */
+    background-color: #007BFF; /* Cor de fundo azul */
+    border: none; /* Remove a borda padrão */
+    border-radius: 4px; /* Cantos arredondados */
+    cursor: pointer; /* Mostra a mãozinha no hover */
+    transition: background-color 0.3s; /* Transição suave ao passar o mouse */
+}
+
+/* Estilo do botão ao passar o mouse */
+.login-button:hover {
+    background-color: #0056b3; /* Muda a cor de fundo no hover */
+}

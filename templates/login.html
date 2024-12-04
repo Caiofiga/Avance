@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/login.css') }}"
+    />
+  </head>
+  <body>
+    <div class="login-container">
+      <form action="/login" method="POST" class="login-form">
+        <h2>Login</h2>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter your username"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+        <button type="submit" class="login-button">Login</button>
+      </form>
+      <!-- Mensagem de erro que será exibida quando houver falha no login -->
+      {% if error %}
+      <div id="error-message" style="color: red; margin-top: 10px">
+        {{ error }}
+      </div>
+      {% endif %}
+      <!-- Botão para registrar-se -->
+      <div style="margin-top: 20px; text-align: center">
+        <a href="/register" class="register-link">Registrar-se</a>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='css.login.js') }}"></script>
+  </body>
+</html>

@@ -13,6 +13,8 @@ from flask import Flask, request, render_template, session, redirect, url_for, j
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from scipy.signal import butter, filtfilt
+from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 import matplotlib.pyplot as plt
 from functools import wraps
 import secrets
@@ -483,6 +485,78 @@ cors = CORS(flaskapp)
 socketio = SocketIO(flaskapp, cors_allowed_origins="*")
 flaskapp.secret_key = secrets.token_urlsafe(16)
 
+# Caminho do arquivo de registro de usuários
+USER_FILE = 'users.txt'
+
+# Inicializando o Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(flaskapp)
+# Define a página de login para redirecionamento
+login_manager.login_view = 'login'
+
+# Função para obter dados de usuários do arquivo
+
+
+def get_user_data():
+    if not os.path.exists(USER_FILE):  # Verifica se o arquivo de usuários existe
+        return []
+    with open(USER_FILE, 'r') as f:
+        # Lê os dados de usuários
+        return [line.strip().split(',') for line in f]
+
+# Função para registrar um novo usuário
+
+
+def register_user(username, password):
+    hashed_password = generate_password_hash(password)  # Criptografa a senha
+    with open(USER_FILE, 'a') as f:
+        # Armazena o usuário e senha criptografada
+        f.write(f"{username},{hashed_password}\n")
+
+# Função para verificar se um usuário existe
+
+
+def user_exists(username):
+    users = get_user_data()  # Obtém todos os usuários registrados
+    for existing_username, _ in users:
+        if existing_username == username:
+            return True
+    return False
+
+# Função para obter um usuário a partir do nome de usuário
+
+
+def get_user_by_username(username):
+    users = get_user_data()  # Obtém todos os usuários
+    for existing_username, hashed_password in users:
+        if existing_username == username:
+            # Retorna um objeto User
+            return User(existing_username, hashed_password)
+    return None
+
+# Classe User para integração com o Flask-Login
+
+
+class User(UserMixin):
+    def __init__(self, username, password_hash):
+        self.username = username
+        self.password_hash = password_hash
+
+    def get_id(self):
+        return self.username  # Retorna o id (username) do usuário
+
+    def check_password(self, password):
+        # Verifica se a senha bate com o hash
+        return check_password_hash(self.password_hash, password)
+
+# Função para carregar o usuário com Flask-Login
+
+
+@login_manager.user_loader
+def load_user(username):
+    # Carrega o usuário pelo nome de usuário
+    return get_user_by_username(username)
+
 
 def need_calibration(func):
     @wraps(func)  # This preserves the original function's name and metadata
@@ -513,8 +587,55 @@ def disconnect_camera():
 
 
 @flaskapp.route('/admin')
+@login_required
 def admin():
     return render_template('admin.html')
+
+
+@flaskapp.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':  # Se o formulário de login for enviado
+        # Obtém os valores inseridos pelo usuário
+        entered_username = request.form.get('username')
+        entered_password = request.form.get('password')
+
+        # Tenta encontrar o usuário pelo nome
+        user = get_user_by_username(entered_username)
+
+        # Verifica se o usuário existe e se a senha está correta
+        if user and user.check_password(entered_password):
+            login_user(user)  # Faz o login do usuário
+            return redirect(url_for('admin'))  # Redireciona para a página home
+        # Se as credenciais estiverem erradas
+        return render_template('login.html', error="Usuário ou senha incorretos. Tente novamente.")
+
+    # Exibe o formulário de login
+    return render_template('login.html', error=None)
+
+
+@flaskapp.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':  # Se o formulário de registro for enviado
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # Verifica se o usuário já existe
+        if user_exists(username):
+            return render_template('register.html', error="Usuário já existe. Escolha outro nome de usuário.")
+
+        # Registra o novo usuário
+        register_user(username, password)
+        return redirect(url_for('login'))  # Redireciona para a página de login
+
+    # Exibe o formulário de registro
+    return render_template('register.html', error=None)
+
+
+@flaskapp.route('/logout')
+@login_required  # Página protegida que exige que o usuário esteja logado
+def logout():
+    logout_user()  # Faz o logout do usuário
+    return redirect(url_for('login'))  # Redireciona para a página de login
 
 
 @flaskapp.route('/calibration', methods=['GET', 'POST'])
