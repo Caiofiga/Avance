@@ -42,7 +42,7 @@ body {
     display: none;
   }
   #video_feed {
-    display: none;
+    display: flex;
     position: absolute;
     left: auto; /* Remove conflicting position */
     right: 10px; /* Align within gameScreen */

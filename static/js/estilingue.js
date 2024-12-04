@@ -34,7 +34,7 @@ let ball = {
   visible: true,
 };
 
-let distances = [75, 120, 175]; // Set distance away from the anchors at a 45 degree angle
+let distances = [100, 120, 175]; // Set distance away from the anchors at a 45 degree angle
 const angle = Math.PI / 4;
 
 let objectives = anchors.map((anchor, index) => ({
@@ -59,7 +59,7 @@ let obstacles = [];
 
 let levelobstacles = [
   { x: 1280, y: 500, w: 50, h: 50 },
-  { x: 1700, y: 1100, w: 50, h: 50 },
+  { x: 1500, y: 900, w: 50, h: 50 },
   { x: 800, y: 850, w: 50, h: 50 },
 ];
 
@@ -284,28 +284,6 @@ function handleNextLevel() {
   playing = true;
 }
 
-function handleGameWin() {
-  playing = false;
-  let data = JSON.stringify({
-    data: {
-      type: "bird",
-      level: level,
-      completed: level + 1 >= distances.length,
-      time: gametime,
-    },
-  });
-  sendData(data);
-  setTimeout(() => {
-    const myModal = new bootstrap.Modal(
-      document.getElementById("exampleModal")
-    );
-    myModal.show();
-    myModal._element.addEventListener("hidden.bs.modal", handleNextLevel);
-
-    startFireworks(document.getElementById("modal-text"));
-    StartConfetti();
-  }, 4500);
-}
 
 export function lockModal(angle) {
   const closemodalbutton = document.getElementById("closemodalbutton");
@@ -317,7 +295,7 @@ export function lockModal(angle) {
   if (angle > 20) {
     closemodalbutton.disabled = true;
     modaltext.style.visibility = "inherit";
-    startButton.disabled = true;
+    startButton.disabled = false;
     startText.style.visibility = "inherit";
   } else {
     closemodalbutton.disabled = false;
@@ -551,3 +529,34 @@ resizeCanvas();
 document.getElementById("endButton").addEventListener("click", () => {
   endGame(); // Finalizar o jogo manualmente
 });
+
+function endGame() {
+  // Parar o temporizador
+  level = 2;
+  handleGameWin();
+}
+
+
+function handleGameWin() {
+  playing = false;
+  level 
+  let data = JSON.stringify({
+    data: {
+      type: "bird",
+      level: level,
+      completed: level + 1 >= distances.length,
+      time: gametime,
+    },
+  });
+  sendData(data);
+  setTimeout(() => {
+    const myModal = new bootstrap.Modal(
+      document.getElementById("exampleModal")
+    );
+    myModal.show();
+    myModal._element.addEventListener("hidden.bs.modal", handleNextLevel);
+
+    startFireworks(document.getElementById("modal-text"));
+    StartConfetti();
+  }, 4500);
+}
